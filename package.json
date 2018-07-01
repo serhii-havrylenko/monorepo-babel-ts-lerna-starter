@@ -1,0 +1,24 @@
+{
+  "name": "monorepo-ts-babel-lerna",
+  "version": "0.0.0",
+  "description": "Test monorepo with ts and lerna",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "test"
+  },
+  "author": "Serhii Havrylenko",
+  "license": "ISC",
+  "private": true,
+  "devDependencies": {
+    "@babel/cli": "^7.0.0-beta.51",
+    "@babel/core": "^7.0.0-beta.51",
+    "@babel/preset-stage-0": "^7.0.0-beta.51",
+    "@babel/preset-typescript": "^7.0.0-beta.51",
+    "babel-bridge": "^1.12.11",
+    "lerna": "^3.0.0-beta.21",
+    "typescript": "^2.9.2"
+  }
+}
