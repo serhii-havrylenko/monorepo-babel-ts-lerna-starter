@@ -1,0 +1,15 @@
+{
+  "name": "@taxi/login-form",
+  "version": "0.0.0",
+  "description": "Login form component",
+  "main": "/dist/index.js",
+  "author": "chef",
+  "license": "MIT",
+  "private": true,
+  "peerDependencies": {
+    "react": "^16.4.1"
+  },
+  "scripts": {
+    "build": "babel src --out-dir dist --source-maps --copy-files --extensions .ts,.tsx --delete-dir-on-start --config-file ../../.babelrc --no-comments"
+  }
+}

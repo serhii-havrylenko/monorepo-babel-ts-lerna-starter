@@ -1,8 +1,13 @@
 {
   "name": "monorepo-ts-babel-lerna",
   "version": "0.0.0",
+  "workspaces": [
+    "packages/*"
+  ],
   "description": "Test monorepo with ts and lerna",
   "scripts": {
+    "prebuild": "tsc",
+    "build": "lerna exec --parallel 'babel src --out-dir dist --source-maps --copy-files --extensions .ts,.tsx --config-file ../../.babelrc --delete-dir-on-start --no-comments'",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -15,10 +20,13 @@
   "devDependencies": {
     "@babel/cli": "^7.0.0-beta.51",
     "@babel/core": "^7.0.0-beta.51",
+    "@babel/preset-react": "^7.0.0-beta.52",
     "@babel/preset-stage-0": "^7.0.0-beta.51",
     "@babel/preset-typescript": "^7.0.0-beta.51",
+    "@types/react": "^16.4.6",
     "babel-bridge": "^1.12.11",
     "lerna": "^3.0.0-beta.21",
+    "react": "^16.4.1",
     "typescript": "^2.9.2"
   }
 }
