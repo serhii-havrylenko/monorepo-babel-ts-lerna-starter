@@ -10,6 +10,9 @@
     "react": "^16.4.1"
   },
   "scripts": {
-    "build": "babel src --out-dir dist --source-maps --copy-files --extensions .ts,.tsx --delete-dir-on-start --config-file ../../.babelrc --no-comments"
+    "build": "babel src --out-dir dist --source-maps --copy-files --extensions .ts,.tsx --delete-dir-on-start --no-comments"
+  },
+  "babel": {
+    "extends": "../../babel.config.js"
   }
 }

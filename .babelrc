@@ -1,8 +1,0 @@
-{
-  "presets": [
-    ["@babel/preset-stage-0", { "decoratorsLegacy": true }],
-    "@babel/preset-react",
-    "@babel/preset-typescript"
-  ],
-  "ignore": ["node_modules"]
-}

@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "noEmit": false,
+    "noEmit": true,
     "strict": true,
     "jsx": "react",
     "target": "esnext",

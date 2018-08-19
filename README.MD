@@ -52,7 +52,7 @@ Going back to real examples:
 
 ```
 $ lerna init --independent
-lerna info version 3.0.0-beta.21
+lerna info version 3.1.1
 lerna info Updating package.json
 lerna info Creating lerna.json
 lerna info Creating packages directory
@@ -87,16 +87,51 @@ Let's take care about Babel and use all benefits from whole set of plugins alrea
 Just hit next command to install all required plugins and presets:
 
 ```bash
-$ yarn add -DW @babel/cli @babel/core @babel/preset-typescript @babel/preset-stage-0 babel-bridge @babel/preset-react typescript
+$ yarn add -DW @babel/cli @babel/core @babel/preset-typescript @babel/preset-env babel-bridge babel-core@7.0.0-bridge.0 @babel/preset-react typescript
+```
+
+`babel-core@7.0.0-bridge.0` should be noticed separately as it's needed for properly resolving `babel-core` packages for all libs which requires old version of babel and to avoid duplicated packages installed. Next line whould be added to the root `package.json`:
+
+```json
+{
+  "resolves": {
+    "babel-core": "^7.0.0-bridge.0"
+  }
+}
 ```
 
 #### Configuration
 
-.babelrc
+Let's configure `babel.config.js` with next data:
 
-In latest releases Babel changed approach for looking up config files - it looks for config in `cwd` only. More details could be found in [official Babel documentation](https://babeljs.io/docs/en/next/babelrc)
+```javascript
+module.exports = api => {
+  api.cache(true);
 
-Due to this changes, build command in monorepo should have path to `.babelrc`. There are at least two options how to write build commands:
+  return {
+    presets: [
+      [
+        "@babel/env",
+        {
+          targets: {
+            browsers: "Last 2 Chrome versions, Firefox ESR",
+            node: "8.9"
+          }
+        }
+      ],
+      "@babel/preset-react",
+      "@babel/preset-typescript"
+    ],
+    ignore: ["node_modules"]
+  };
+};
+```
+
+Configuration is quite simple and trivial - [@babel/preset-react](https://babeljs.io/docs/en/next/babel-preset-react) and [@babel/preset-typescript](https://babeljs.io/docs/en/next/babel-preset-typescript) plus simple config for [@babel/preset-env](https://babeljs.io/docs/en/next/babel-preset-env). In Release candidate version Babel team has removed support for `stage-*` and `preset-201*` packages, so it means that all actually used plugins should be set by users manually.
+
+Apart from removing `stage-*` packages, Babel has changed approach for looking up config files - it looks for config in `cwd` till the first `package.json`. More details could be found in [official Babel documentation](https://babeljs.io/docs/en/next/babelrc)
+
+Due to this changes, build command in monorepo should have path to `.babelrc` or `babel.config.js` specified. It could be done directly in build commands:
 
 1.  In root package.json:
 
@@ -104,7 +139,7 @@ Due to this changes, build command in monorepo should have path to `.babelrc`. T
 {
   "scripts": {
     "build":
-      "lerna exec --parallel 'babel src --out-dir dist --source-maps --copy-files --extensions .ts,.tsx --config-file ../../.babelrc --delete-dir-on-start --no-comments'"
+      "lerna exec --parallel 'babel src --out-dir dist --source-maps --copy-files --extensions .ts,.tsx --config-file ../...babel.config.js --delete-dir-on-start --no-comments'"
   }
 }
 ```
@@ -115,8 +150,16 @@ Due to this changes, build command in monorepo should have path to `.babelrc`. T
 {
   "scripts": {
     "build":
-      "babel src --out-dir dist --source-maps --copy-files --extensions .ts,.tsx --delete-dir-on-start --config-file ../../.babelrc --no-comments"
+      "babel src --out-dir dist --source-maps --copy-files --extensions .ts,.tsx --delete-dir-on-start --config-file ../../babel.config.js --no-comments"
   }
+}
+```
+
+Another way how to treat parent babel config is `extends` option provided by latest babel. The easiest approach for that is setting next lines in `package.json` on package level:
+
+```json
+{
+  "extends": "../../babel.config.js"
 }
 ```
 
@@ -129,7 +172,7 @@ Let's create minimal required `tsconfig.json` in the root of monorepo:
 ```json
 {
   "compilerOptions": {
-    "noEmit": false,
+    "noEmit": true,
     "strict": true,
     "jsx": "react",
     "target": "esnext",
@@ -166,13 +209,8 @@ Lerna does not have ability to add peer dependency for packages. Nevertheless, i
   ]
 ```
 
-and then add `react` as peer dependency:
-
-```bash
-yarn workspace @taxi/login-form add -P react
-```
-
-As we set `react` as peer dependency, we still should have it, and associated types defintions for typescript, installed in our `node_modules`. So let's add it as `devDependency` to the root of monorepo:
+In our case `react` is definitely peerDependency as our packages will have it, however we don't want to have plenty of dependencies on each package.
+As we decided to set `react` as peer dependency, we still should have it, and associated types definitions for typescript, installed in our `node_modules`. So let's add it as `devDependency` to the root of monorepo:
 
 ```bash
 yarn add -DW react @types/react
@@ -196,4 +234,10 @@ question license (MIT):
 question private: true
 success Saved package.json
 Done in 85.84s.
+```
+
+and add `react` as peerDependency:
+
+```bash
+yarn workspace @taxi/login-form add -P react
 ```
