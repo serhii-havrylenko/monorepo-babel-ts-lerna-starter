@@ -1,6 +1,12 @@
 {
-  "extends": ["tslint:latest", "tslint-react"],
+  "extends": [
+    "tslint:latest",
+    "tslint-react",
+    "tslint-plugin-prettier",
+    "tslint-config-prettier"
+  ],
   "rules": {
+    "prettier": true,
     "quotemark": [true, "single", "avoid-escape", "avoid-template"]
   }
 }

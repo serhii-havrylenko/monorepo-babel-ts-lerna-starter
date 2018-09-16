@@ -9,14 +9,21 @@
     - [TypeScript](#typescript)
       - [Installation](#installation)
       - [Configuration](#configuration)
+      - [Building packages](#building-packages)
       - [Checking types](#checking-types)
     - [Peer dependencies](#peer-dependencies)
     - [Static code analyser](#static-code-analyser)
       - [Tslint](#tslint)
       - [Stylelint](#stylelint)
       - [All together](#all-together)
+    - [Code formatting](#code-formatting)
   - [First package](#first-package)
     - [Development](#development)
+    - [Storybook](#storybook)
+      - [Installation](#installation-1)
+      - [Typescript](#typescript)
+      - [First story](#first-story)
+      - [Tslint](#tslint-1)
 
 How it works...
 
@@ -80,7 +87,7 @@ By default lerna is using NPM, however, it's quite simple to set Yarn as package
 
 TypeScript could be used in two approaches:
 
-- pure TypeScript
+- native TypeScript
 - [@babel/preset-typescript](https://babeljs.io/docs/en/babel-preset-typescript) with TypeScript preset
 
 Implementation from @babel does not have all features from latest TypeScript, however, in case of usage Babel we do not miss all cool plugins and integration with all tools looks much easier.
@@ -92,7 +99,7 @@ Let's take care about Babel and use all benefits from whole set of plugins alrea
 Just hit next command to install all required plugins and presets:
 
 ```bash
-$ yarn add -DW @babel/cli @babel/core @babel/preset-typescript @babel/preset-env babel-bridge babel-core@7.0.0-bridge.0 @babel/preset-react typescript
+$ yarn add -DW @babel/cli @babel/core @babel/preset-typescript @babel/preset-env babel-bridge babel-core@7.0.0-bridge.0 @babel/preset-react typescript @types/node
 ```
 
 `babel-core@7.0.0-bridge.0` should be noticed separately as it's needed for properly resolving `babel-core` packages for all libs which requires old version of babel and to avoid duplicated packages installed. Next line whould be added to the root `package.json`:
@@ -110,33 +117,35 @@ $ yarn add -DW @babel/cli @babel/core @babel/preset-typescript @babel/preset-env
 Let's configure `babel.config.js` with next data:
 
 ```javascript
-module.exports = api => {
+module.exports = (api) => {
   api.cache(true);
 
   return {
     presets: [
       [
-        "@babel/env",
+        '@babel/env',
         {
           targets: {
-            browsers: "Last 2 Chrome versions, Firefox ESR",
-            node: "8.9"
-          }
-        }
+            browsers: 'Last 2 Chrome versions, Firefox ESR',
+            node: '8.9',
+          },
+        },
       ],
-      "@babel/preset-react",
-      "@babel/preset-typescript"
+      '@babel/preset-react',
+      '@babel/preset-typescript',
     ],
-    ignore: ["node_modules"]
+    ignore: ['node_modules'],
   };
 };
 ```
 
-Configuration is quite simple and trivial - [@babel/preset-react](https://babeljs.io/docs/en/babel-preset-react) and [@babel/preset-typescript](https://babeljs.io/docs/en/babel-preset-typescript) plus simple config for [@babel/preset-env](https://babeljs.io/docs/en/babel-preset-env). In Release candidate version Babel team has removed support for `stage-*` and `preset-201*` packages, so it means that all actually used plugins should be set by users manually.
+Configuration is quite simple and trivial - [@babel/preset-react](https://babeljs.io/docs/en/babel-preset-react) and [@babel/preset-typescript](https://babeljs.io/docs/en/babel-preset-typescript) plus simple config for [@babel/preset-env](https://babeljs.io/docs/en/babel-preset-env). In Release candidate version, Babel team has removed support for `stage-*` and `preset-201*` packages, so it means that all actually used plugins should be set by users manually.
 
 Apart from removing `stage-*` packages, Babel has changed approach for looking up config files - it looks for config in `cwd` till the first `package.json`. More details could be found in [official Babel documentation](https://babeljs.io/docs/en/config-files)
 
-Due to this changes, build command in monorepo should have path to `.babelrc` or `babel.config.js` specified. It could be done directly in build commands:
+#### Building packages
+
+Due to changes for config lookup, build command in monorepo should have path to `.babelrc` or `babel.config.js` specified. It could be done directly in build commands:
 
 1.  In root package.json:
 
@@ -319,6 +328,54 @@ and new script in the root `package.json`:
 
 **Note:** `run-p -c` allows to run all `lint:*` commands even if one of them failed. It's useful in case of separated static code analyzer steps, as after one run we have output from `tslint` and `stylelint`, instead of only first failed.
 
+### Code formatting
+
+For now we have `typescript` for static types checking, `tslint` and `stylelint` for static code analyzing. Still, we could write unreadable or not well formatted code. We could avoid all issues relate to code formatting with `prettier`. It will automatically format our code according to predefined standards. Moreover, it will fix some issues reported by `tslint`.
+
+As usual, installation and configuration is very simple:
+
+```bash
+yarn add -DW prettier tslint-config-prettier tslint-plugin-prettier
+```
+
+Next is needed is `.prettierrc`:
+
+```json
+{
+  "printWidth": 80,
+  "tabWidth": 2,
+  "singleQuote": true,
+  "trailingComma": "all",
+  "arrowParens": "always"
+}
+```
+
+and integration with `tslint`, as both of the tools have common rules (like tabWidth, trailingComma, etc). Next lines should be added to the `tslint.json` to make it work with prettier:
+
+```json
+{
+  "extends": [
+    "tslint:latest",
+    "tslint-react",
+    "tslint-plugin-prettier",
+    "tslint-config-prettier"
+  ],
+  "rules": {
+    "prettier": true
+  }
+}
+```
+
+Last but not least, let's add script to the root `package.json` for automatic code formatting based on defined above rules:
+
+```json
+{
+  "scripts": {
+    "fix": "yarn lint:ts --fix"
+  }
+}
+```
+
 ## First package
 
 Let's init first package
@@ -345,9 +402,114 @@ and add `react` and `styled-components` as peerDependencies:
 yarn workspace @taxi/login-form add -P react styled-components
 ```
 
+### Development
+
 Let's create simple login form component with basic styling:
 
 ```typescript
 ```
 
-### Development
+### Storybook
+
+As we have our first component written, we still cannot see how it looks like and even debug it. There are plenty of ways how to present react component. Let's go with most famous one - `storybook`. It allows to present separate components and/or group of them as well as testing it in real browsers, and having documentation close to it.
+
+#### Installation
+
+Latest stable version of `storybook@3.4.10` works with `webpack@3`, `babel@^6` and `typescript@^2.7`. As we have latest `@babel@^7` and `typescript@^3` it's better to use next version of storybook which has the same set of dependencies, even if it's bleeding edge version.
+
+If you do it for the first time, you should have `@storybook@cli` installed globally on your machine and init:
+
+```bash
+yarn global add @storybook/cli@next
+getstorybook
+```
+
+It will automatically detect project type (react), installs all required packages and create basic configuration folder.
+
+#### Typescript
+
+Still, as we use typescript, we have to install typings for those packages, loader for wepback and needed peerDependencies:
+
+```bash
+yarn add -DW @types/storybook__react @types/storybook__addon-actions @types/storybook__addon-links react-dom webpack awesome-typescript-loader
+```
+
+Storybook inits application as it is javascript based, as we have typescript everywhere, we have to change path resolution for stories in `storybook/config.js` file:
+
+```typescript
+const req = require.context('../packages', true, /.story.tsx?$/);
+```
+
+The last but not least part is `webpack.config.js` inside `storybook` folder, just create it with next content:
+
+```javascript
+module.exports = (baseConfig, env, config) => {
+  config.module.rules.push({
+    test: /\.(ts|tsx)$/,
+    loader: require.resolve('awesome-typescript-loader'),
+  });
+  config.resolve.extensions.push('.ts', '.tsx');
+  return config;
+};
+```
+
+and associated configuration part in `tsconfig.json` for `awesome-typescript-loader`:
+
+```json
+{
+  "awesomeTypescriptLoaderOptions": {
+    "useBabel": true,
+    "babelCore": "@babel/core"
+  }
+}
+```
+
+Configuration part is ready, we could start storybook with `yarn storybook` command
+
+#### First story
+
+Let's create first story and test first package as well as `storybook` and `typescript` integration. Just create `LoginForm.story.tsx` inside `login-form` package.
+
+```typescript
+import React from 'react';
+import { storiesOf } from '@storybook/react';
+
+import LoginForm from './LoginForm';
+
+storiesOf('LoginForm', module).add('with text', () => <LoginForm />);
+```
+
+and run `yarn storybook`. When build process is finished, storybook will be accessible under http://localhost:6006
+
+#### Tslint
+
+As soon as we add `storybook` to our dependencies and run `yarn lint:ts` we will get an error from `tslint`:
+
+```
+ERROR: packages/login-form/src/LoginForm.story.tsx[1, 27]: Module '@storybook/react' is not listed as dependency in package.json
+```
+
+The reason is obvious, we use package which is installed as devDependency in our source code. Unfortunately there is no options like override for specific path or files. It could be done by splitting `lint-ts` command into two separated for production code (which will be shipped in package) and for test code (storybook, tests, etc).
+
+Let's create another config for `tslint` called `tslint.test.json`:
+
+```json
+{
+  "extends": ["./tslint.json"],
+  "rules": {
+    "no-implicit-dependencies": [false, "dev"]
+  }
+}
+```
+
+and modify current `lint-ts` to handle only production code and add another script for linting test code base into our root `package.json`:
+
+```json
+{
+  "scripts": {
+    "fix": "run-p -c lint:ts* --fix",
+    "lint:ts": "tslint 'packages/**/*.ts{,x}' --exclude '**/*.{test,story}.ts{,x}'",
+    "lint:ts-test": "tslint --config tslint.test.json 'packages/**/*.{test,story}.ts{,x}'"
+  }
+}
+```
