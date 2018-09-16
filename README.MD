@@ -11,7 +11,12 @@
       - [Configuration](#configuration)
       - [Checking types](#checking-types)
     - [Peer dependencies](#peer-dependencies)
-    - [First package](#first-package)
+    - [Static code analyser](#static-code-analyser)
+      - [Tslint](#tslint)
+      - [Stylelint](#stylelint)
+      - [All together](#all-together)
+  - [First package](#first-package)
+    - [Development](#development)
 
 How it works...
 
@@ -52,7 +57,7 @@ Going back to real examples:
 
 ```
 $ lerna init --independent
-lerna info version 3.1.1
+lerna info version 3.4.0
 lerna info Updating package.json
 lerna info Creating lerna.json
 lerna info Creating packages directory
@@ -76,7 +81,7 @@ By default lerna is using NPM, however, it's quite simple to set Yarn as package
 TypeScript could be used in two approaches:
 
 - pure TypeScript
-- [@babel/preset-typescript](https://babeljs.io/docs/en/next/babel-plugin-transform-typescript.html) with TypeScript preset
+- [@babel/preset-typescript](https://babeljs.io/docs/en/babel-preset-typescript) with TypeScript preset
 
 Implementation from @babel does not have all features from latest TypeScript, however, in case of usage Babel we do not miss all cool plugins and integration with all tools looks much easier.
 
@@ -127,9 +132,9 @@ module.exports = api => {
 };
 ```
 
-Configuration is quite simple and trivial - [@babel/preset-react](https://babeljs.io/docs/en/next/babel-preset-react) and [@babel/preset-typescript](https://babeljs.io/docs/en/next/babel-preset-typescript) plus simple config for [@babel/preset-env](https://babeljs.io/docs/en/next/babel-preset-env). In Release candidate version Babel team has removed support for `stage-*` and `preset-201*` packages, so it means that all actually used plugins should be set by users manually.
+Configuration is quite simple and trivial - [@babel/preset-react](https://babeljs.io/docs/en/babel-preset-react) and [@babel/preset-typescript](https://babeljs.io/docs/en/babel-preset-typescript) plus simple config for [@babel/preset-env](https://babeljs.io/docs/en/babel-preset-env). In Release candidate version Babel team has removed support for `stage-*` and `preset-201*` packages, so it means that all actually used plugins should be set by users manually.
 
-Apart from removing `stage-*` packages, Babel has changed approach for looking up config files - it looks for config in `cwd` till the first `package.json`. More details could be found in [official Babel documentation](https://babeljs.io/docs/en/next/babelrc)
+Apart from removing `stage-*` packages, Babel has changed approach for looking up config files - it looks for config in `cwd` till the first `package.json`. More details could be found in [official Babel documentation](https://babeljs.io/docs/en/config-files)
 
 Due to this changes, build command in monorepo should have path to `.babelrc` or `babel.config.js` specified. It could be done directly in build commands:
 
@@ -138,8 +143,7 @@ Due to this changes, build command in monorepo should have path to `.babelrc` or
 ```json
 {
   "scripts": {
-    "build":
-      "lerna exec --parallel 'babel src --out-dir dist --source-maps --copy-files --extensions .ts,.tsx --config-file ../...babel.config.js --delete-dir-on-start --no-comments'"
+    "build": "lerna exec --parallel 'babel src --out-dir dist --source-maps --copy-files --extensions .ts,.tsx --config-file ../../babel.config.js --delete-dir-on-start --no-comments'"
   }
 }
 ```
@@ -149,8 +153,7 @@ Due to this changes, build command in monorepo should have path to `.babelrc` or
 ```json
 {
   "scripts": {
-    "build":
-      "babel src --out-dir dist --source-maps --copy-files --extensions .ts,.tsx --delete-dir-on-start --config-file ../../babel.config.js --no-comments"
+    "build": "babel src --out-dir dist --source-maps --copy-files --extensions .ts,.tsx --delete-dir-on-start --config-file ../../babel.config.js --no-comments"
   }
 }
 ```
@@ -163,9 +166,19 @@ Another way how to treat parent babel config is `extends` option provided by lat
 }
 ```
 
+In this case build command doesn't require passing path to babel config and will be simplified:
+
+```json
+{
+  "scripts": {
+    "build": "lerna exec --parallel 'babel src --out-dir dist --source-maps --copy-files --extensions .ts,.tsx --delete-dir-on-start --no-comments'"
+  }
+}
+```
+
 #### Checking types
 
-[@babel/plugin-transform-typescript](https://github.com/babel/babel/tree/master/packages/babel-plugin-transform-typescript) does not perform type-check for it's input. However, it could be checked with pure `typescript`. It can be run with option `noEmit` and it will check types only, without emitting any code.
+[@babel/plugin-transform-typescript](https://github.com/babel/babel/tree/master/packages/babel-plugin-transform-typescript) does not perform type-check for it's input. However, it could be checked with native `typescript` compiler (`tsc`). It should be run with option `noEmit` for checking types only without emitting any code.
 
 Let's create minimal required `tsconfig.json` in the root of monorepo:
 
@@ -209,14 +222,104 @@ Lerna does not have ability to add peer dependency for packages. Nevertheless, i
   ]
 ```
 
-In our case `react` is definitely peerDependency as our packages will have it, however we don't want to have plenty of dependencies on each package.
-As we decided to set `react` as peer dependency, we still should have it, and associated types definitions for typescript, installed in our `node_modules`. So let's add it as `devDependency` to the root of monorepo:
+In our case `react`, as well as `styled-components` for CSS-in-JS tool, are definitely peerDependencies as our packages will have them, however we don't want to have plenty of dependencies on each package installed separately.
+As we decided to set `react` and `styled-components` as peer dependency, we still should have them, and associated types definitions for typescript, installed in our `node_modules`. So let's add them as `devDependency` to the root of monorepo:
 
 ```bash
-yarn add -DW react @types/react
+yarn add -DW react @types/react styled-components
 ```
 
-### First package
+### Static code analyser
+
+Having typescript for types checking could protect us from creating plenty of mistakes and save a lot of time for writing basic unit tests related to incorrect input data. However, it won't protect us from writing over-complicated, unreadable, or even hacky code. Even more, it won't protect us from using incorrect or unsupported CSS rules, would it be CSS, SCSS or CSS-in-JS.
+
+#### Tslint
+
+The easiest solution for automating such checks is using `tslint` for static code analyzing.
+
+Let's install it as devDependency in the root of our monorepo:
+
+```bash
+yarn add -DW tslint tslint-react
+```
+
+and create simple config file for it `tslint.json`:
+
+```json
+{
+  "extends": ["tslint:latest", "tslint-react"],
+  "rules": {
+    "semicolon": "single"
+  }
+}
+```
+
+and new script in package.json for linting `*.ts` files:
+
+```json
+{
+  "scripts": {
+    "lint:ts": "tslint 'packages/**/*.ts{,x}'"
+  }
+}
+```
+
+Now static code analyzer could be run with simple `yarn lint:ts` command.
+
+#### Stylelint
+
+Let's use `stylelint` for improving our CSS styles quality and readability. It could be easily used for analyzing CSS-in-JS as well as with simple CSS or SCSS files.
+
+Installation and configuration process as simple as with `tslint`:
+
+```bash
+yarn add -DW stylelint stylelint-processor-styled-components stylelint-config-styled-components stylelint-config-standard
+```
+
+and create simple config file for it `tslint.json`:
+
+```json
+{
+  "processors": ["stylelint-processor-styled-components"],
+  "extends": ["stylelint-config-standard", "stylelint-config-styled-components"]
+}
+```
+
+and new script in package.json for linting `*.ts` files:
+
+```json
+{
+  "scripts": {
+    "lint:css": "stylelint 'packages/**/*.ts{,x}'"
+  }
+}
+```
+
+Now static code analyzer could be run with simple `yarn lint:css` command.
+
+#### All together
+
+For now we have `lint:ts` for checking typescript code quality and `lint:css` for CSS, however, they are still separated commands and it would be uncomfortable to run them separately all the time. Let's group them in one unified `lint` command:
+
+```bash
+yarn add -DW npm-run-all
+```
+
+and new script in the root `package.json`:
+
+```json
+{
+  "scripts": {
+    "lint": "run-p -c lint:*",
+    "lint:ts": "tslint 'packages/**/*.ts{,x}'",
+    "lint:css": "stylelint 'packages/**/*.ts{,x}'"
+  }
+}
+```
+
+**Note:** `run-p -c` allows to run all `lint:*` commands even if one of them failed. It's useful in case of separated static code analyzer steps, as after one run we have output from `tslint` and `stylelint`, instead of only first failed.
+
+## First package
 
 Let's init first package
 
@@ -236,8 +339,15 @@ success Saved package.json
 Done in 85.84s.
 ```
 
-and add `react` as peerDependency:
+and add `react` and `styled-components` as peerDependencies:
 
 ```bash
-yarn workspace @taxi/login-form add -P react
+yarn workspace @taxi/login-form add -P react styled-components
 ```
+
+Let's create simple login form component with basic styling:
+
+```typescript
+```
+
+### Development
