@@ -17,6 +17,7 @@
       - [Stylelint](#stylelint)
       - [All together](#all-together)
     - [Code formatting](#code-formatting)
+    - [Testing](#testing)
   - [First package](#first-package)
     - [Development](#development)
     - [Storybook](#storybook)
@@ -24,6 +25,7 @@
       - [Typescript](#typescript)
       - [First story](#first-story)
       - [Tslint](#tslint-1)
+    - [Testing](#testing-1)
 
 How it works...
 
@@ -106,7 +108,7 @@ $ yarn add -DW @babel/cli @babel/core @babel/preset-typescript @babel/preset-env
 
 ```json
 {
-  "resolves": {
+  "resolutions": {
     "babel-core": "^7.0.0-bridge.0"
   }
 }
@@ -200,6 +202,7 @@ Let's create minimal required `tsconfig.json` in the root of monorepo:
     "target": "esnext",
     "module": "esnext",
     "moduleResolution": "node",
+    "esModuleInterop": true,
     "rootDir": "./",
     "baseUrl": "./",
     "paths": {
@@ -376,6 +379,124 @@ Last but not least, let's add script to the root `package.json` for automatic co
 }
 ```
 
+### Testing
+
+For now we have TypeScript for checking types, `tslint` and `stylelint` for static code quality analyzing. The last, but not least part is testing. Let's use `jest` as test runner and test assertion tool. It has the best support for `react`, including snapshot testing, extensive mocking library, build-in coverage reporting and ability to run tests in different processes.
+
+Let's install `jest` and `ts-jest` for running `typescript` code:
+
+```bash
+yarn add -DW jest ts-jest @types/jest
+```
+
+`jest` could be configured in two ways:
+
+- `yarn jest --init` and answer for all questions
+- manually create config file with minimum required configuration
+
+Here is basic setup from `jest.config.js` in the root of the monorepo
+
+```javascript
+module.exports = {
+  clearMocks: true,
+  coverageDirectory: 'coverage',
+  coverageReporters: ['text', 'clover'],
+  coverageThreshold: {
+    global: {
+      branches: 80,
+      functions: 80,
+      lines: 80,
+      statements: 80,
+    },
+  },
+  globals: {
+    'ts-jest': {},
+  },
+  moduleFileExtensions: ['ts', 'tsx', 'js'],
+  notify: true,
+  notifyMode: 'always',
+  roots: ['<rootDir>packages'],
+  testMatch: ['**/__tests__/*.+(ts|tsx|js)', '**/*.test.+(ts|tsx|js)'],
+  transform: {
+    '^.+\\.(ts|tsx)$': 'ts-jest',
+  },
+};
+```
+
+`coverageThreshold` is protecting us from writing not enough tests and having poor test coverage.
+
+As soon as you have basic config, it's time to install `enzyme` which is extending support for `react`:
+
+```bash
+yarn add -DW enzyme enzyme-adapter-react-16 @types/enzyme @types/enzyme-adapter-react-16
+```
+
+Add `setupTestFrameworkScriptFile: '<rootDir>jest/setupTests.ts'` into `jest.config.js` file and proper setup for `enzyme` into `jest/setupTests.ts`:
+
+```typescript
+import Enzyme from 'enzyme';
+import Adapter from 'enzyme-adapter-react-16';
+
+Enzyme.configure({ adapter: new Adapter() });
+```
+
+Now `jest` is able to render `react` components, however, it will serialize snapshots as pure objects and we want to have it serialized as HTML markup. We could achieve it with proper serializer:
+
+```bash
+yarn add -DW  enzyme-to-json@next
+```
+
+and `snapshotSerializers: ['enzyme-to-json/serializer']` in `jest.config.js.`
+
+We are almost there, we are able to run tests and create proper snapshots. Nevertheless, we still have issues with `styled-components` - on each change in styles, `styled-components` is creating different class name. Based on it we'll have plenty of false negative tests fails just because of class name is changed. Let's fix it with proper tool
+
+```bash
+yarn add -DW jest-styled-components
+```
+
+`import 'jest-styled-components'` should be added to `jest/setupTests.ts`.
+
+Just to sum up, `jest.config.js`:
+
+```javascript
+module.exports = {
+  clearMocks: true,
+  coverageDirectory: 'coverage',
+  coverageReporters: ['text', 'clover'],
+  coverageThreshold: {
+    global: {
+      branches: 80,
+      functions: 80,
+      lines: 80,
+      statements: 80,
+    },
+  },
+  globals: {
+    'ts-jest': {},
+  },
+  moduleFileExtensions: ['ts', 'tsx', 'js'],
+  notify: true,
+  notifyMode: 'always',
+  roots: ['<rootDir>packages'],
+  testMatch: ['**/__tests__/*.+(ts|tsx|js)', '**/*.test.+(ts|tsx|js)'],
+  transform: {
+    '^.+\\.(ts|tsx)$': 'ts-jest',
+  },
+  setupTestFrameworkScriptFile: '<rootDir>jest/setupTests.ts',
+  snapshotSerializers: ['enzyme-to-json/serializer'],
+};
+```
+
+That's it, `jest` is configured and could be run. Let's add `test` to the root `package.json` scripts:
+
+```json
+{
+  "scripts": {
+    "test": "jest"
+  }
+}
+```
+
 ## First package
 
 Let's init first package
@@ -512,4 +633,51 @@ and modify current `lint-ts` to handle only production code and add another scri
     "lint:ts-test": "tslint --config tslint.test.json 'packages/**/*.{test,story}.ts{,x}'"
   }
 }
+```
+
+### Testing
+
+`jest` is configured and ready to be used. Let's create simple snapshot test for out package:
+
+```typescript
+import { mount } from 'enzyme';
+import * as React from 'react';
+
+import { LoginForm } from './LoginForm';
+
+describe('LoginForm', () => {
+  test('should match snapshot and styles', () => {
+    expect(mount(<LoginForm />)).toMatchSnapshot();
+  });
+});
+```
+
+All tests could be run with simple command:
+
+```bash
+yarn test
+```
+
+As the result, `jest` will produce snapshot with proper styles and mocked classnames:
+
+```
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`LoginForm should match snapshot and styles 1`] = `
+.c0 {
+  font-weight: bold;
+}
+
+<Component>
+  <div>
+    <styled.span>
+      <span
+        className="c0"
+      >
+        Login form
+      </span>
+    </styled.span>
+  </div>
+</Component>
+`;
 ```

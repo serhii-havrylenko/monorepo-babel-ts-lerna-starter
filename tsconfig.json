@@ -6,6 +6,7 @@
     "target": "esnext",
     "module": "esnext",
     "moduleResolution": "node",
+    "esModuleInterop": true,
     "rootDir": "./",
     "baseUrl": "./",
     "paths": {

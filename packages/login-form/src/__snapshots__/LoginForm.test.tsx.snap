@@ -1,0 +1,19 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`LoginForm should match snapshot and styles 1`] = `
+.c0 {
+  font-weight: bold;
+}
+
+<Component>
+  <div>
+    <styled.span>
+      <span
+        className="c0"
+      >
+        Login form
+      </span>
+    </styled.span>
+  </div>
+</Component>
+`;
