@@ -18,13 +18,13 @@
       - [All together](#all-together)
     - [Code formatting](#code-formatting)
     - [Testing](#testing)
-  - [First package](#first-package)
-    - [Development](#development)
     - [Storybook](#storybook)
       - [Installation](#installation-1)
       - [Typescript](#typescript)
-      - [First story](#first-story)
       - [Tslint](#tslint-1)
+  - [First package](#first-package)
+    - [Development](#development)
+    - [Storybook](#storybook-1)
     - [Testing](#testing-1)
 
 How it works...
@@ -381,7 +381,7 @@ Last but not least, let's add script to the root `package.json` for automatic co
 
 ### Testing
 
-For now we have TypeScript for checking types, `tslint` and `stylelint` for static code quality analyzing. The last, but not least part is testing. Let's use `jest` as test runner and test assertion tool. It has the best support for `react`, including snapshot testing, extensive mocking library, build-in coverage reporting and ability to run tests in different processes.
+For now we have TypeScript for checking types, `tslint` and `stylelint` for static code quality analyzing. Last, but not least part is testing. Let's use `jest` as test runner and test assertion tool. It has the best support for `react`, including snapshot testing, extensive mocking library, build-in coverage reporting and ability to run tests in different processes.
 
 Let's install `jest` and `ts-jest` for running `typescript` code:
 
@@ -497,6 +497,112 @@ That's it, `jest` is configured and could be run. Let's add `test` to the root `
 }
 ```
 
+### Storybook
+
+We already able to write code in monorepo with `typescript`, analyze it with `tslint` and `stylelint`, test it with `jest`. However, we still cannot see how our code will look like and even debug we cannot debug it properly.
+
+There are plenty of ways how to present react component. Let's go with most famous one - `storybook`. It allows to present separate components and/or group of them as well as testing it in real browsers, and having documentation close to it.
+
+#### Installation
+
+Latest stable version of `storybook@3.4.10` works with `webpack@3`, `babel@^6` and `typescript@^2.7`. As we have latest `@babel@^7` and `typescript@^3` it's better to use next version of storybook which has the same set of dependencies, even if it's bleeding edge version.
+
+If you do it for the first time, you should have `@storybook@cli` installed globally on your machine and init:
+
+```bash
+yarn global add @storybook/cli@next
+getstorybook
+```
+
+It will automatically detect project type (react), installs all required packages and create basic configuration folder.
+
+#### Typescript
+
+Still, as we use typescript, we have to install typings for those packages, loader for wepback and needed peerDependencies:
+
+```bash
+yarn add -DW @types/storybook__react @types/storybook__addon-actions @types/storybook__addon-links react-dom webpack awesome-typescript-loader
+```
+
+Storybook inits application as it is javascript based, as we have typescript everywhere, we have to change path resolution for stories in `storybook/config.js` file:
+
+```typescript
+const req = require.context('../packages', true, /.story.tsx?$/);
+```
+
+Last but not least part is `webpack.config.js` inside `storybook` folder, just create it with next content:
+
+```javascript
+module.exports = (baseConfig, env, config) => {
+  config.module.rules.push({
+    test: /\.(ts|tsx)$/,
+    loader: require.resolve('awesome-typescript-loader'),
+  });
+  config.resolve.extensions.push('.ts', '.tsx');
+  return config;
+};
+```
+
+and associated configuration part in `tsconfig.json` for `awesome-typescript-loader`:
+
+```json
+{
+  "awesomeTypescriptLoaderOptions": {
+    "useBabel": true,
+    "babelCore": "@babel/core"
+  }
+}
+```
+
+Configuration part is ready, we could start storybook with `yarn storybook` command
+
+#### Tslint
+
+As soon as we add `storybook` to our devDependencies and run `yarn lint:ts` we will get an error from `tslint`:
+
+```
+ERROR: Module '@storybook/react' is not listed as dependency in package.json
+```
+
+The reason is obvious, we use package which is installed as devDependency in our source code (in the story file). Unfortunately there is no options like override for specific path or files. It could be done by splitting `lint-ts` command into two separated for production code (which will be shipped as packages) and for test code (storybook, tests, etc).
+
+Let's create config for `tslint` for production phase, called `tslint.prod.json`:
+
+```json
+{
+  "extends": ["./tslint.json"],
+  "rules": {
+    "no-implicit-dependencies": true
+  }
+}
+```
+
+Another config for the test phase called `tslint.test.json`:
+
+```json
+{
+  "extends": ["./tslint.json"],
+  "rules": {
+    "no-implicit-dependencies": [false, "dev"]
+  }
+}
+```
+
+`"no-implicit-dependencies": false` into `tslint.json` to disable this rule by default. This one is need to fix issues with IDEs as by default they use `tslint.json` for all files, whether it test or production code.
+
+Last, but not least, scripts in the root `package.json`
+
+```json
+{
+  "scripts": {
+    "fix": "run-p -c lint:ts-* --fix",
+    "lint:ts": "run-p -c lint:ts-*",
+    "lint:ts-prod": "tslint --config tslint.prod.json 'packages/**/*.ts{,x}' --exclude '**/*.{test,story}.ts{,x}'",
+    "lint:ts-test": "tslint --config tslint.test.json 'packages/**/*.{test,story}.ts{,x}'"
+  }
+}
+```
+
 ## First package
 
 Let's init first package
@@ -532,64 +638,7 @@ Let's create simple login form component with basic styling:
 
 ### Storybook
 
-As we have our first component written, we still cannot see how it looks like and even debug it. There are plenty of ways how to present react component. Let's go with most famous one - `storybook`. It allows to present separate components and/or group of them as well as testing it in real browsers, and having documentation close to it.
-
-#### Installation
-
-Latest stable version of `storybook@3.4.10` works with `webpack@3`, `babel@^6` and `typescript@^2.7`. As we have latest `@babel@^7` and `typescript@^3` it's better to use next version of storybook which has the same set of dependencies, even if it's bleeding edge version.
-
-If you do it for the first time, you should have `@storybook@cli` installed globally on your machine and init:
-
-```bash
-yarn global add @storybook/cli@next
-getstorybook
-```
-
-It will automatically detect project type (react), installs all required packages and create basic configuration folder.
-
-#### Typescript
-
-Still, as we use typescript, we have to install typings for those packages, loader for wepback and needed peerDependencies:
-
-```bash
-yarn add -DW @types/storybook__react @types/storybook__addon-actions @types/storybook__addon-links react-dom webpack awesome-typescript-loader
-```
-
-Storybook inits application as it is javascript based, as we have typescript everywhere, we have to change path resolution for stories in `storybook/config.js` file:
-
-```typescript
-const req = require.context('../packages', true, /.story.tsx?$/);
-```
-
-The last but not least part is `webpack.config.js` inside `storybook` folder, just create it with next content:
-
-```javascript
-module.exports = (baseConfig, env, config) => {
-  config.module.rules.push({
-    test: /\.(ts|tsx)$/,
-    loader: require.resolve('awesome-typescript-loader'),
-  });
-  config.resolve.extensions.push('.ts', '.tsx');
-  return config;
-};
-```
-
-and associated configuration part in `tsconfig.json` for `awesome-typescript-loader`:
-
-```json
-{
-  "awesomeTypescriptLoaderOptions": {
-    "useBabel": true,
-    "babelCore": "@babel/core"
-  }
-}
-```
-
-Configuration part is ready, we could start storybook with `yarn storybook` command
-
-#### First story
-
-Let's create first story and test first package as well as `storybook` and `typescript` integration. Just create `LoginForm.story.tsx` inside `login-form` package.
+`storybook` is configured, so it's time to create first story and test first package as well as `storybook` and `typescript` integration. Just create `LoginForm.story.tsx` inside `login-form` package.
 
 ```typescript
 import React from 'react';
@@ -600,40 +649,7 @@ import LoginForm from './LoginForm';
 storiesOf('LoginForm', module).add('with text', () => <LoginForm />);
 ```
 
-and run `yarn storybook`. When build process is finished, storybook will be accessible under http://localhost:6006
-
-#### Tslint
-
-As soon as we add `storybook` to our dependencies and run `yarn lint:ts` we will get an error from `tslint`:
-
-```
-ERROR: packages/login-form/src/LoginForm.story.tsx[1, 27]: Module '@storybook/react' is not listed as dependency in package.json
-```
-
-The reason is obvious, we use package which is installed as devDependency in our source code. Unfortunately there is no options like override for specific path or files. It could be done by splitting `lint-ts` command into two separated for production code (which will be shipped in package) and for test code (storybook, tests, etc).
-
-Let's create another config for `tslint` called `tslint.test.json`:
-
-```json
-{
-  "extends": ["./tslint.json"],
-  "rules": {
-    "no-implicit-dependencies": [false, "dev"]
-  }
-}
-```
-
-and modify current `lint-ts` to handle only production code and add another script for linting test code base into our root `package.json`:
-
-```json
-{
-  "scripts": {
-    "fix": "run-p -c lint:ts* --fix",
-    "lint:ts": "tslint 'packages/**/*.ts{,x}' --exclude '**/*.{test,story}.ts{,x}'",
-    "lint:ts-test": "tslint --config tslint.test.json 'packages/**/*.{test,story}.ts{,x}'"
-  }
-}
-```
+and run `yarn storybook`. When the build process is finished, storybook will be accessible under http://localhost:6006
 
 ### Testing
 

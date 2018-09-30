@@ -8,9 +8,10 @@
   "scripts": {
     "build-storybook": "build-storybook",
     "build": "lerna exec --parallel 'babel src --out-dir dist --source-maps --copy-files --extensions .ts,.tsx --delete-dir-on-start --no-comments'",
-    "fix": "run-p -c 'lint:ts* --fix'",
+    "fix": "run-p -c 'lint:ts-* --fix'",
     "lint:css": "stylelint 'packages/**/*.ts{,x}'",
-    "lint:ts": "tslint 'packages/**/*.ts{,x}' --exclude '**/*.{test,story}.ts{,x}'",
+    "lint:ts": "run-p -c lint:ts-*",
+    "lint:ts-prod": "tslint --config tslint.prod.json 'packages/**/*.ts{,x}' --exclude '**/*.{test,story}.ts{,x}'",
     "lint:ts-test": "tslint --config tslint.test.json 'packages/**/*.{test,story}.ts{,x}'",
     "lint": "run-p -c lint:*",
     "prebuild": "tsc",

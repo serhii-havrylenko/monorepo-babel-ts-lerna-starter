@@ -7,6 +7,7 @@
   ],
   "rules": {
     "prettier": true,
-    "quotemark": [true, "single", "avoid-escape", "avoid-template"]
+    "quotemark": [true, "single", "avoid-escape", "avoid-template"],
+    "no-implicit-dependencies": false
   }
 }
