@@ -22,6 +22,7 @@
       - [Installation](#installation-1)
       - [Typescript](#typescript)
       - [Tslint](#tslint-1)
+      - [Addons](#addons)
   - [First package](#first-package)
     - [Development](#development)
     - [Storybook](#storybook-1)
@@ -364,10 +365,19 @@ and integration with `tslint`, as both of the tools have common rules (like tabW
     "tslint-config-prettier"
   ],
   "rules": {
-    "prettier": true
+    "prettier": true,
+    "quotemark": [
+      true,
+      "single",
+      "avoid-escape",
+      "avoid-template",
+      "jsx-double"
+    ]
   }
 }
 ```
+
+Important note is `quotemark` rule. Because of `jsx` usage we have to override default recommended rules which requires to have single quotemark everywhere.
 
 Last but not least, let's add script to the root `package.json` for automatic code formatting based on defined above rules:
 
@@ -602,6 +612,33 @@ Last, but not least, scripts in the root `package.json`
   }
 }
 ```
+
+#### Addons
+
+Storybook allows to pass any props to the react component without rebuilding stories, just through UI interface. To do it, we have to add one more addons - [`@storybook/addon-knobs`](https://github.com/storybooks/storybook/tree/master/addons/knobs)
+
+```bash
+yarn add -DW @storybook/addon-knobs@next @types/storybook__addon-knobs moment
+```
+
+**NOTE**: moment has to be installed because of wrong peerDependencies management on `storybook` and `react-datetime` level.
+
+Next step is to add `import '@storybook/addon-knobs/register';` to the `storybook/addons.js` and modify `storybook/config.js` to have global decorator for each story:
+
+```javascript
+import { configure, addDecorator } from '@storybook/react';
+import { withKnobs } from '@storybook/addon-knobs';
+
+const req = require.context('../packages', true, /.story.tsx?$/);
+function loadStories() {
+  addDecorator(withKnobs);
+  req.keys().forEach((filename) => req(filename));
+}
+
+configure(loadStories, module);
+```
+
+Now `knobs` could be used in the stories.
 
 ## First package
 

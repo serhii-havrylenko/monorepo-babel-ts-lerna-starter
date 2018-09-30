@@ -1,8 +1,10 @@
-import { configure } from "@storybook/react";
+import { configure, addDecorator } from '@storybook/react';
+import { withKnobs } from '@storybook/addon-knobs';
 
-const req = require.context("../packages", true, /.story.tsx?$/);
+const req = require.context('../packages', true, /.story.tsx?$/);
 function loadStories() {
-  req.keys().forEach(filename => req(filename));
+  addDecorator(withKnobs);
+  req.keys().forEach((filename) => req(filename));
 }
 
 configure(loadStories, module);
