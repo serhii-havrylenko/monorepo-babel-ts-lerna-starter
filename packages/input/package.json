@@ -1,7 +1,7 @@
 {
-  "name": "input",
+  "name": "@taxi/input",
   "version": "0.0.0",
-  "description": "> TODO: description",
+  "description": "Input component",
   "author": "chef <serhii.havrylenko@gmail.com>",
   "homepage": "https://github.com/serhii-havrylenko/monorepo-babel-ts-lerna-starter",
   "license": "MIT",
@@ -20,8 +20,5 @@
   "peerDependencies": {
     "react": "^16.5.1",
     "styled-components": "^3.4.6"
-  },
-  "babel": {
-    "extends": "../../babel.config.js"
   }
 }

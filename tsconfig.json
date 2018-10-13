@@ -10,6 +10,7 @@
     "rootDir": "./",
     "baseUrl": "./",
     "paths": {
+      "@taxi/*": ["packages/*/src"],
       "*": ["node_modules", "packages"]
     }
   },
@@ -18,5 +19,5 @@
     "babelCore": "@babel/core"
   },
   "include": ["packages"],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "packages/**/dist"]
 }

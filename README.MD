@@ -27,6 +27,7 @@
     - [Development](#development)
     - [Storybook](#storybook-1)
     - [Testing](#testing-1)
+    - [Build](#build)
 
 How it works...
 
@@ -45,6 +46,10 @@ Local NPM registry will be used in whole article to avoid publishing to global r
 ## Getting started
 
 ### Repository initialization
+
+<p align="center">
+  <img alt="Lerna" src="https://cloud.githubusercontent.com/assets/952783/15271604/6da94f96-1a06-11e6-8b04-dc3171f79a90.png" width="150">
+</p>
 
 Simply run next command to have initial structure created by Lerna
 
@@ -82,11 +87,18 @@ By default lerna is using NPM, however, it's quite simple to set Yarn as package
 
 ```json
 {
+  "packages": ["packages/*"],
+  "version": "independent",
+  "useWorkspace": true,
   "npmClient": "yarn"
 }
 ```
 
 ### TypeScript
+
+<p align="center">
+  <img alt="typescript" src="https://www.typescriptlang.org/assets/images/logo_nocircle.svg" width="150">
+</p>
 
 TypeScript could be used in two approaches:
 
@@ -102,7 +114,7 @@ Let's take care about Babel and use all benefits from whole set of plugins alrea
 Just hit next command to install all required plugins and presets:
 
 ```bash
-$ yarn add -DW @babel/cli @babel/core @babel/preset-typescript @babel/preset-env babel-bridge babel-core@7.0.0-bridge.0 @babel/preset-react typescript @types/node
+$ yarn add -DW @babel/cli @babel/core @babel/preset-typescript @babel/preset-env babel-core@7.0.0-bridge.0 @babel/preset-react typescript @types/node
 ```
 
 `babel-core@7.0.0-bridge.0` should be noticed separately as it's needed for properly resolving `babel-core` packages for all libs which requires old version of babel and to avoid duplicated packages installed. Next line whould be added to the root `package.json`:
@@ -116,6 +128,10 @@ $ yarn add -DW @babel/cli @babel/core @babel/preset-typescript @babel/preset-env
 ```
 
 #### Configuration
+
+<p align="center">
+  <img alt="babel" src="https://raw.githubusercontent.com/babel/logo/master/babel.png" width="150">
+</p>
 
 Let's configure `babel.config.js` with next data:
 
@@ -134,9 +150,26 @@ module.exports = (api) => {
           },
         },
       ],
-      '@babel/preset-react',
+      [
+        '@babel/preset-react',
+        {
+          development: process.env.BABEL_ENV !== 'build',
+        },
+      ],
       '@babel/preset-typescript',
     ],
+    env: {
+      build: {
+        ignore: [
+          '**/*.test.tsx',
+          '**/*.test.ts',
+          '**/*.story.tsx',
+          '__snapshots__',
+          '__tests__',
+          '__stories__',
+        ],
+      },
+    },
     ignore: ['node_modules'],
   };
 };
@@ -148,14 +181,14 @@ Apart from removing `stage-*` packages, Babel has changed approach for looking u
 
 #### Building packages
 
-Due to changes for config lookup, build command in monorepo should have path to `.babelrc` or `babel.config.js` specified. It could be done directly in build commands:
+Due to changes for config lookup, build command in monorepo should have path to `.babelrc` or `babel.config.js` specified or as [--root-mode option](https://babeljs.io/docs/en/options#rootmode). It could be done directly in build commands:
 
 1.  In root package.json:
 
 ```json
 {
   "scripts": {
-    "build": "lerna exec --parallel 'babel src --out-dir dist --source-maps --copy-files --extensions .ts,.tsx --config-file ../../babel.config.js --delete-dir-on-start --no-comments'"
+    "build": "lerna exec --parallel 'BABEL_ENV=build babel src --out-dir dist --source-maps --extensions .ts,.tsx --config-file ../../babel.config.js --delete-dir-on-start --no-comments'"
   }
 }
 ```
@@ -165,7 +198,7 @@ Due to changes for config lookup, build command in monorepo should have path to 
 ```json
 {
   "scripts": {
-    "build": "babel src --out-dir dist --source-maps --copy-files --extensions .ts,.tsx --delete-dir-on-start --config-file ../../babel.config.js --no-comments"
+    "build": "BABEL_ENV=build babel src --out-dir dist --source-maps --extensions .ts,.tsx --delete-dir-on-start --config-file ../../babel.config.js --no-comments"
   }
 }
 ```
@@ -183,7 +216,17 @@ In this case build command doesn't require passing path to babel config and will
 ```json
 {
   "scripts": {
-    "build": "lerna exec --parallel 'babel src --out-dir dist --source-maps --copy-files --extensions .ts,.tsx --delete-dir-on-start --no-comments'"
+    "build": "lerna exec --parallel 'BABEL_ENV=build babel src --out-dir dist --source-maps --extensions .ts,.tsx --delete-dir-on-start --no-comments'"
+  }
+}
+```
+
+Last and easiest option is just add `--root-mode=upward` option to the build command which allows to resolve babel config upward from the current root. In this case build command looks like:
+
+```json
+{
+  "scripts": {
+    "build": "lerna exec --parallel 'BABEL_ENV=build babel --root-mode upward src --out-dir dist --source-maps --extensions .ts,.tsx --delete-dir-on-start --no-comments'"
   }
 }
 ```
@@ -220,6 +263,7 @@ and put it in `prebuild` step to run type checks automatically prior each build
 ```json
 {
   "scripts": {
+    "tsc": "tsc",
     "prebuild": "tsc"
   }
 }
@@ -247,6 +291,11 @@ yarn add -DW react @types/react styled-components
 Having typescript for types checking could protect us from creating plenty of mistakes and save a lot of time for writing basic unit tests related to incorrect input data. However, it won't protect us from writing over-complicated, unreadable, or even hacky code. Even more, it won't protect us from using incorrect or unsupported CSS rules, would it be CSS, SCSS or CSS-in-JS.
 
 #### Tslint
+
+<p align="center">
+  <img alt="tslint" src="https://www.feram.io/images/modules/tslint.svg" width="150">
+</p>
+
 
 The easiest solution for automating such checks is using `tslint` for static code analyzing.
 
@@ -280,6 +329,10 @@ and new script in package.json for linting `*.ts` files:
 Now static code analyzer could be run with simple `yarn lint:ts` command.
 
 #### Stylelint
+
+<p align="center">
+  <img alt="stylelint" src="https://stylelint.io/_/src/components/DefaultHeadMeta/favicon.7f672624abe02127db4972965ea73002.ico" width="150">
+</p>
 
 Let's use `stylelint` for improving our CSS styles quality and readability. It could be easily used for analyzing CSS-in-JS as well as with simple CSS or SCSS files.
 
@@ -333,6 +386,10 @@ and new script in the root `package.json`:
 **Note:** `run-p -c` allows to run all `lint:*` commands even if one of them failed. It's useful in case of separated static code analyzer steps, as after one run we have output from `tslint` and `stylelint`, instead of only first failed.
 
 ### Code formatting
+
+<p align="center">
+  <img alt="prettier" src="https://raw.githubusercontent.com/prettier/prettier-logo/master/images/prettier-banner-light.png" width="150">
+</p>
 
 For now we have `typescript` for static types checking, `tslint` and `stylelint` for static code analyzing. Still, we could write unreadable or not well formatted code. We could avoid all issues relate to code formatting with `prettier`. It will automatically format our code according to predefined standards. Moreover, it will fix some issues reported by `tslint`.
 
@@ -391,6 +448,10 @@ Last but not least, let's add script to the root `package.json` for automatic co
 
 ### Testing
 
+<p align="center">
+  <img alt="jest" src="https://camo.githubusercontent.com/f6414ee20933d5fb8b06dc32ed38c8aa175da559/687474703a2f2f64702e68616e6c6f6e2e696f2f3331337933753244307033382f6a6573742e706e67" width="150">
+</p>
+
 For now we have TypeScript for checking types, `tslint` and `stylelint` for static code quality analyzing. Last, but not least part is testing. Let's use `jest` as test runner and test assertion tool. It has the best support for `react`, including snapshot testing, extensive mocking library, build-in coverage reporting and ability to run tests in different processes.
 
 Let's install `jest` and `ts-jest` for running `typescript` code:
@@ -420,7 +481,9 @@ module.exports = {
     },
   },
   globals: {
-    'ts-jest': {},
+    'ts-jest': {
+      extends: './babel.config.js',
+    },
   },
   moduleFileExtensions: ['ts', 'tsx', 'js'],
   notify: true,
@@ -433,7 +496,19 @@ module.exports = {
 };
 ```
 
-`coverageThreshold` is protecting us from writing not enough tests and having poor test coverage.
+Notes:
+
+- `ts-jest` could use babel config or pure typescript compiler. In our case we have babel configured, so it could be used with just 1 line in config:
+
+```
+  globals: {
+    'ts-jest': {
+      extends: './babel.config.js',
+    },
+  },
+```
+
+- `coverageThreshold` is protecting us from writing not enough tests and having poor test coverage.
 
 As soon as you have basic config, it's time to install `enzyme` which is extending support for `react`:
 
@@ -482,7 +557,9 @@ module.exports = {
     },
   },
   globals: {
-    'ts-jest': {},
+    'ts-jest': {
+      extends: './babel.config.js',
+    },
   },
   moduleFileExtensions: ['ts', 'tsx', 'js'],
   notify: true,
@@ -507,7 +584,11 @@ That's it, `jest` is configured and could be run. Let's add `test` to the root `
 }
 ```
 
-### Storybook
+### Storybo
+
+<p align="center">
+  <img alt="storybook" src="https://camo.githubusercontent.com/34ab12e06afbf839047bf3c19ed3e76082921f85/68747470733a2f2f64337676366c703535716a6171632e636c6f756466726f6e742e6e65742f6974656d732f33783051313531343431317a336c314f326131512f73746f7279626f6f6b732d6f6c642e706e673f582d436c6f75644170702d56697369746f722d49643d643430373439383635383733643762356162333263383038353231353066373426763d6530643332303332" width="150">
+</p>
 
 We already able to write code in monorepo with `typescript`, analyze it with `tslint` and `stylelint`, test it with `jest`. However, we still cannot see how our code will look like and even debug we cannot debug it properly.
 
@@ -640,17 +721,41 @@ configure(loadStories, module);
 
 Now `knobs` could be used in the stories.
 
+### Final build
+
+As we already have build command as well as code formatting and static code analyzing tools in place, it's time to use them all together in the build process:
+
+```json
+{
+  "scripts": {
+    "prebuild": "run-p tsc lint test",
+    "build": "lerna exec --parallel 'BABEL_ENV=build babel src --root-mode upward --out-dir dist --source-maps --extensions .ts,.tsx --delete-dir-on-start --no-comments'",
+    "lint:css": "stylelint 'packages/**/*.ts{,x}'",
+    "lint:ts": "run-p -c lint:ts-*",
+    "lint:ts-prod": "tslint --config tslint.prod.json 'packages/**/*.ts{,x}' --exclude '**/*.{test,story}.ts{,x}'",
+    "lint:ts-test": "tslint --config tslint.test.json 'packages/**/*.{test,story}.ts{,x}'",
+    "lint": "run-p -c lint:*",
+    "test": "jest",
+    "tsc": "tsc"
+  },
+}
+```
+
+As soon as we run `yarn build` command, `yarn` automatically will run `tsc` for type checks, `tslint` for code quality analyzing and `test` on each of packages in the monorepo.
+
+If they succeed, `build` will proceed and prepare all packages for publishing.
+
 ## First package
 
-Let's init first package
+Let's init first simple package which will be just Input with optional label for it:
 
 ```
-$ mkdir packages/login-form && cd packages/login-form/
+$ mkdir packages/input && cd packages/input
 $ yarn init
 yarn init v1.7.0
-question name (login-form): @taxi/login-form
+question name (input): @taxi/input
 question version (1.0.0): 0.0.0
-question description: Login form component
+question description: Input component
 question entry point (index.js): /dist/index.ts
 question repository url:
 question author: chef
@@ -663,44 +768,118 @@ Done in 85.84s.
 and add `react` and `styled-components` as peerDependencies:
 
 ```bash
-yarn workspace @taxi/login-form add -P react styled-components
+yarn workspace @taxi/input add -P react styled-components
 ```
 
 ### Development
 
-Let's create simple login form component with basic styling:
+Let's create simple input with optional label:
 
 ```typescript
+import * as React from 'react';
+import styled from 'styled-components';
+
+export interface LabelProps {
+  labelWidth?: number;
+}
+
+export interface InputWithLabelProps extends LabelProps {
+  id?: string;
+  label?: string;
+}
+
+export interface InputWithoutLabelProps extends LabelProps {
+  id: string;
+  label: string;
+}
+
+export type InputLabelProps = InputWithLabelProps | InputWithoutLabelProps;
+
+export interface InputProps {
+  name?: string;
+  type?: string;
+}
+
+const Wrapper = styled.div`
+  display: flex;
+  margin: 10px;
+`;
+
+const Label = styled<LabelProps, 'label'>('label')`
+  margin-right: 10px;
+  font-weight: bold;
+  width: ${({ labelWidth = 100 }) => labelWidth}px;
+`;
+
+const NativeInput = styled.input`
+  width: 100%;
+`;
+
+export const Input: React.SFC<InputProps & InputLabelProps> = ({
+  label,
+  id,
+  labelWidth,
+  ...rest
+}) => (
+  <Wrapper>
+    {label && (
+      <Label labelWidth={labelWidth} htmlFor={id}>
+        {label}:
+      </Label>
+    )}
+    <NativeInput id={id} {...rest} />
+  </Wrapper>
+);
+
+Input.defaultProps = {
+  type: 'text',
+};
 ```
 
 ### Storybook
 
-`storybook` is configured, so it's time to create first story and test first package as well as `storybook` and `typescript` integration. Just create `LoginForm.story.tsx` inside `login-form` package.
+`storybook` is configured, so it's time to create first story and test first package as well as `storybook` and `typescript` integration. Just create `Input.story.tsx` inside `input` package.
 
 ```typescript
-import React from 'react';
+import { text } from '@storybook/addon-knobs';
 import { storiesOf } from '@storybook/react';
+import * as React from 'react';
 
-import LoginForm from './LoginForm';
+import { Input } from './Input';
 
-storiesOf('LoginForm', module).add('with text', () => <LoginForm />);
+storiesOf('Input', module)
+  .add('default', () => <Input />)
+  .add('with label', () => (
+    <Input id="test" label={text('Label', 'Username')} />
+  ))
+  .add('with label and type', () => (
+    <Input
+      id="test"
+      label={text('Label', 'Username')}
+      type={text('Type', 'text')}
+    />
+  ));
 ```
 
 and run `yarn storybook`. When the build process is finished, storybook will be accessible under http://localhost:6006
 
 ### Testing
 
-`jest` is configured and ready to be used. Let's create simple snapshot test for out package:
+`jest` is configured and ready to be used. Let's create simple snapshot tests for our package:
 
 ```typescript
 import { mount } from 'enzyme';
 import * as React from 'react';
 
-import { LoginForm } from './LoginForm';
+import { Input } from './Input';
 
-describe('LoginForm', () => {
-  test('should match snapshot and styles', () => {
-    expect(mount(<LoginForm />)).toMatchSnapshot();
+describe('Input', () => {
+  test('should match snapshot and styles for default props', () => {
+    expect(mount(<Input />)).toMatchSnapshot();
+  });
+
+  test('should match snapshot with label', () => {
+    expect(mount(<Input id="test" label="Name" />)).toMatchSnapshot();
   });
 });
 ```
@@ -711,26 +890,56 @@ All tests could be run with simple command:
 yarn test
 ```
 
-As the result, `jest` will produce snapshot with proper styles and mocked classnames:
+Now we have a chance to check how our integration of `jest` and `jest-styled-components` works. Just open created snapshot and check that classnames are replaced with `c0`, `c1`, etc:
 
 ```
-// Jest Snapshot v1, https://goo.gl/fbAQLP
-
-exports[`LoginForm should match snapshot and styles 1`] = `
+exports[`Input should match snapshot and styles for default props 1`] = `
 .c0 {
-  font-weight: bold;
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: -ms-flexbox;
+  display: flex;
+  margin: 10px;
 }
 
-<Component>
-  <div>
-    <styled.span>
-      <span
-        className="c0"
-      >
-        Login form
-      </span>
-    </styled.span>
-  </div>
-</Component>
-`;
+.c1 {
+  width: 100%;
+}
+```
+
+### Build
+
+It's time to build our package. Simply run
+
+```bash
+yarn build
+```
+
+and we should have `packages/input/dist` folder with all compiled files. The most important one is `packages/input/dist/Input.js` which has :
+
+```javascript
+const Input = ({ label, id, labelWidth, ...rest }) =>
+  React.createElement(
+    Wrapper,
+    null,
+    label &&
+      React.createElement(
+        Label,
+        {
+          labelWidth: labelWidth,
+          htmlFor: id,
+        },
+        label,
+        ':',
+      ),
+    React.createElement(
+      NativeInput,
+      _extends(
+        {
+          id: id,
+        },
+        rest,
+      ),
+    ),
+  );
 ```

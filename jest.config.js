@@ -11,9 +11,15 @@ module.exports = {
     },
   },
   globals: {
-    'ts-jest': {},
+    'ts-jest': {
+      extends: './babel.config.js',
+    },
   },
   moduleFileExtensions: ['ts', 'tsx', 'js'],
+  modulePathIgnorePatterns: ['dist'],
+  moduleNameMapper: {
+    '@taxi/(.+)$': '<rootDir>packages/$1/src',
+  },
   notify: true,
   notifyMode: 'always',
   roots: ['<rootDir>packages'],

@@ -1,1 +1,1 @@
-export { StyledInput as Input, InputProps } from './Input';
+export { Input, InputProps } from './Input';

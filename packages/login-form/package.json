@@ -15,12 +15,12 @@
     "styled-components": "^3.4.6"
   },
   "scripts": {
-    "build": "babel src --out-dir dist --source-maps --copy-files --extensions .ts,.tsx --delete-dir-on-start --no-comments"
+    "build": "BABEL_ENV=build babel src --root-mode upward --out-dir dist --source-maps --extensions .ts,.tsx --delete-dir-on-start --no-comments"
   },
   "files": [
     "dist"
   ],
-  "babel": {
-    "extends": "../../babel.config.js"
+  "dependencies": {
+    "@taxi/input": "^0.0.0"
   }
 }

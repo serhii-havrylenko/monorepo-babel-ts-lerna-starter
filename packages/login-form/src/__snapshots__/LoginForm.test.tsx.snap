@@ -2,18 +2,43 @@
 
 exports[`LoginForm should match snapshot and styles 1`] = `
 .c0 {
-  font-weight: bold;
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-flex-direction: column;
+  -ms-flex-direction: column;
+  flex-direction: column;
+  margin: 10px;
+}
+
+.c1 {
+  text-align: right;
 }
 
 <Component>
-  <div>
-    <styled.span>
-      <span
-        className="c0"
-      >
-        Login form
-      </span>
-    </styled.span>
-  </div>
+  <styled.div>
+    <div
+      className="c0"
+    >
+      <input
+        id="name"
+        label="Name"
+      />
+      <input
+        id="password"
+        label="Password"
+      />
+      <styled.div>
+        <div
+          className="c1"
+        >
+          <button>
+            Log in
+          </button>
+        </div>
+      </styled.div>
+    </div>
+  </styled.div>
 </Component>
 `;
