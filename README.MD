@@ -23,6 +23,7 @@
       - [Typescript](#typescript)
       - [Tslint](#tslint-1)
       - [Addons](#addons)
+    - [Final build](#final-build)
   - [First package](#first-package)
     - [Development](#development)
     - [Storybook](#storybook-1)
@@ -295,7 +296,6 @@ Having typescript for types checking could protect us from creating plenty of mi
 <p align="center">
   <img alt="tslint" src="https://www.feram.io/images/modules/tslint.svg" width="150">
 </p>
-
 
 The easiest solution for automating such checks is using `tslint` for static code analyzing.
 
@@ -584,7 +584,7 @@ That's it, `jest` is configured and could be run. Let's add `test` to the root `
 }
 ```
 
-### Storybo
+### Storybook
 
 <p align="center">
   <img alt="storybook" src="https://camo.githubusercontent.com/34ab12e06afbf839047bf3c19ed3e76082921f85/68747470733a2f2f64337676366c703535716a6171632e636c6f756466726f6e742e6e65742f6974656d732f33783051313531343431317a336c314f326131512f73746f7279626f6f6b732d6f6c642e706e673f582d436c6f75644170702d56697369746f722d49643d643430373439383635383733643762356162333263383038353231353066373426763d6530643332303332" width="150">
@@ -737,7 +737,7 @@ As we already have build command as well as code formatting and static code anal
     "lint": "run-p -c lint:*",
     "test": "jest",
     "tsc": "tsc"
-  },
+  }
 }
 ```
 
