@@ -1,6 +1,7 @@
 # Monorepo
 
 - [Monorepo](#monorepo)
+  - [The goal](#the-goal)
   - [Pre-requirements](#pre-requirements)
     - [Local NPM registry](#local-npm-registry)
   - [Getting started](#getting-started)
@@ -30,15 +31,25 @@
     - [Testing](#testing-1)
     - [Build](#build)
 
-How it works...
+Everyone is tired with creating templates for each type of NPM package with pre-configured skeletons, managing different dependencies across own packages, linking packages for local development with instant packages rebuilding which is wasting developers time, writing proper configuration for linters, `babel`, `typescript`, etc. The worst part appears when one of the key dependencies is getting breaking change upgrade, for instance `babel` - it produces plenty of duplicated changes in each of the package, massive amount of merge request to be reviewed and introduces high change to make a mistake (or even worse - forget about change) in on of the packages. Hopefully, it's year 2018 and JavaScript world has a solution for managing group of the packages in the one repository. This approach calls `monorepo`.
+
+There are many of approaches how to implement monorepo - `yarn workspaces`, `buck`, `pants`, `lerna`, and others. In this article we'll cover `lerna` approach with `yarn` as package manager. Moreover, `lerna` integrates so greatly with `yarn workspaces` as it allows to use workspaces commands directly in the repository even without `lerna`.
+
+## The goal
+
+The goal of this article is to create monorepo starter with Babel for building packages, TypeScript for having benefits of statically typed languages in the JavaScript world, static code analyzing tools (Tslint, Stylelint), Prettier for having automatically formated code (no more tabs or spaces holly wars), Storybook for developing components, and last, but not least - Lerna for publishing.
+
+Let's not waste time on long talks about what are those tools and why they are so important, and proceed to the real configuration and will see how everyone will benefit from each in the future.
+
+For those who are impatient, [here is the link to the repository](https://github.com/serhii-havrylenko/monorepo-babel-ts-lerna-starter) which contains whole set of results form this article - configured monorepo, ready to go and use.
 
 ## Pre-requirements
 
 Packages:
 
 - NodeJS LTS
-- [yarn v1.5+]()
-- [Lerna v3+](https://github.com/lerna/lerna)
+- [yarn v1.5+](https://yarnpkg.com/)
+- [Lerna v3+](https://lernajs.io/)
 
 ### Local NPM registry
 
@@ -46,19 +57,23 @@ Local NPM registry will be used in whole article to avoid publishing to global r
 
 ## Getting started
 
+Time to start our configuration.
+
 ### Repository initialization
 
 <p align="center">
-  <img alt="Lerna" src="https://cloud.githubusercontent.com/assets/952783/15271604/6da94f96-1a06-11e6-8b04-dc3171f79a90.png" width="150">
+  <a href="https://lernajs.io/">
+    <img alt="Lerna" src="https://cloud.githubusercontent.com/assets/952783/15271604/6da94f96-1a06-11e6-8b04-dc3171f79a90.png" width="150">
+  </a>
 </p>
-
-Simply run next command to have initial structure created by Lerna
 
 ```bash
 $ lerna init
 ```
 
-A little bit of important theory about Versioning.
+And you have initial structure of the monorepo created by Lerna.
+
+A little bit of important theory about packages Versioning. This step is the most important one on the repository creation stage as it would impact how do we publish/tags our packages.
 
 Lerna supports two types of packages versioning:
 
@@ -67,9 +82,9 @@ Lerna supports two types of packages versioning:
 
 When **exact** type is chosen, Lerna will use the same version for all packages in monorepo. In case when **independent** version is selected, Lerna will release each package with independent version. More details about versioning is on [official Lerna page](https://github.com/lerna/lerna#how-it-works)
 
-This article will consider only independent versioning for all packages.
+This article will consider only independent versioning for all packages as on the initial stage of packages development some packages would have much more releases then others, and with independent versioning we would have only required packages released.
 
-Going back to real examples:
+Going back to the real examples:
 
 ```
 $ lerna init --independent
@@ -95,20 +110,24 @@ By default lerna is using NPM, however, it's quite simple to set Yarn as package
 }
 ```
 
+Moreover, with `"useWorkspace": true` we allow `lerna` to support `yarn workspaces` and with `"packages": ["packages/*"]` we specify in which folder(s) we would have all our packages.
+
 ### TypeScript
 
 <p align="center">
-  <img alt="typescript" src="https://www.typescriptlang.org/assets/images/logo_nocircle.svg" width="150">
+  <a href="https://www.typescriptlang.org/">
+    <img alt="typescript" src="https://www.vectorlogo.zone/logos/typescriptlang/typescriptlang-card.png" width="150">
+  </a>
 </p>
 
-TypeScript could be used in two approaches:
+TypeScript could be used in two ways:
 
-- native TypeScript
-- [@babel/preset-typescript](https://babeljs.io/docs/en/babel-preset-typescript) with TypeScript preset
+- native TypeScript with `tsc`
+- [@babel/preset-typescript](https://babeljs.io/docs/en/babel-preset-typescript)
 
-Implementation from @babel does not have all features from latest TypeScript, however, in case of usage Babel we do not miss all cool plugins and integration with all tools looks much easier.
+Implementation from `babel` does not have all features from latest TypeScript (like `const enum`), however, in case of usage `babel` we do not miss all cool plugins and integration with all tools looks much easier.
 
-Let's take care about Babel and use all benefits from whole set of plugins already created.
+In this article we would use only `babel` with `typescript` preset.
 
 #### Installation
 
@@ -118,7 +137,7 @@ Just hit next command to install all required plugins and presets:
 $ yarn add -DW @babel/cli @babel/core @babel/preset-typescript @babel/preset-env babel-core@7.0.0-bridge.0 @babel/preset-react typescript @types/node
 ```
 
-`babel-core@7.0.0-bridge.0` should be noticed separately as it's needed for properly resolving `babel-core` packages for all libs which requires old version of babel and to avoid duplicated packages installed. Next line whould be added to the root `package.json`:
+`babel-core@7.0.0-bridge.0` should be noticed separately as it's needed for properly resolving `babel-core` packages for all libs which requires old version of babel and for avoiding duplicated packages installed and possible misusage of `babel` configuration. Next line have to be added to the root `package.json`:
 
 ```json
 {
@@ -131,7 +150,9 @@ $ yarn add -DW @babel/cli @babel/core @babel/preset-typescript @babel/preset-env
 #### Configuration
 
 <p align="center">
-  <img alt="babel" src="https://raw.githubusercontent.com/babel/logo/master/babel.png" width="150">
+  <a href="https://babeljs.io/">
+    <img alt="babel" src="https://raw.githubusercontent.com/babel/logo/master/babel.png" width="150">
+  </a>
 </p>
 
 Let's configure `babel.config.js` with next data:
@@ -294,7 +315,9 @@ Having typescript for types checking could protect us from creating plenty of mi
 #### Tslint
 
 <p align="center">
-  <img alt="tslint" src="https://www.feram.io/images/modules/tslint.svg" width="150">
+  <a href="https://palantir.github.io/tslint/">
+    <img alt="tslint" src="https://www.feram.io/images/modules/tslint.svg" width="150">
+  </a>
 </p>
 
 The easiest solution for automating such checks is using `tslint` for static code analyzing.
@@ -331,7 +354,9 @@ Now static code analyzer could be run with simple `yarn lint:ts` command.
 #### Stylelint
 
 <p align="center">
-  <img alt="stylelint" src="https://stylelint.io/_/src/components/DefaultHeadMeta/favicon.7f672624abe02127db4972965ea73002.ico" width="150">
+  <a href="https://stylelint.io/">
+    <img alt="stylelint" src="https://stylelint.io/_/src/components/DefaultHeadMeta/favicon.7f672624abe02127db4972965ea73002.ico" width="150">
+  </a>
 </p>
 
 Let's use `stylelint` for improving our CSS styles quality and readability. It could be easily used for analyzing CSS-in-JS as well as with simple CSS or SCSS files.
@@ -388,7 +413,9 @@ and new script in the root `package.json`:
 ### Code formatting
 
 <p align="center">
-  <img alt="prettier" src="https://raw.githubusercontent.com/prettier/prettier-logo/master/images/prettier-banner-light.png" width="150">
+  <a href="https://palantir.github.io/tslint/">
+    <img alt="prettier" src="https://raw.githubusercontent.com/prettier/prettier-logo/master/images/prettier-banner-light.png" width="150">
+  </a>
 </p>
 
 For now we have `typescript` for static types checking, `tslint` and `stylelint` for static code analyzing. Still, we could write unreadable or not well formatted code. We could avoid all issues relate to code formatting with `prettier`. It will automatically format our code according to predefined standards. Moreover, it will fix some issues reported by `tslint`.
@@ -449,7 +476,9 @@ Last but not least, let's add script to the root `package.json` for automatic co
 ### Testing
 
 <p align="center">
-  <img alt="jest" src="https://camo.githubusercontent.com/f6414ee20933d5fb8b06dc32ed38c8aa175da559/687474703a2f2f64702e68616e6c6f6e2e696f2f3331337933753244307033382f6a6573742e706e67" width="150">
+  <a href="https://jestjs.io/">
+    <img alt="jest" src="https://camo.githubusercontent.com/f6414ee20933d5fb8b06dc32ed38c8aa175da559/687474703a2f2f64702e68616e6c6f6e2e696f2f3331337933753244307033382f6a6573742e706e67" width="150">
+  </a>
 </p>
 
 For now we have TypeScript for checking types, `tslint` and `stylelint` for static code quality analyzing. Last, but not least part is testing. Let's use `jest` as test runner and test assertion tool. It has the best support for `react`, including snapshot testing, extensive mocking library, build-in coverage reporting and ability to run tests in different processes.
@@ -587,7 +616,9 @@ That's it, `jest` is configured and could be run. Let's add `test` to the root `
 ### Storybook
 
 <p align="center">
-  <img alt="storybook" src="https://camo.githubusercontent.com/34ab12e06afbf839047bf3c19ed3e76082921f85/68747470733a2f2f64337676366c703535716a6171632e636c6f756466726f6e742e6e65742f6974656d732f33783051313531343431317a336c314f326131512f73746f7279626f6f6b732d6f6c642e706e673f582d436c6f75644170702d56697369746f722d49643d643430373439383635383733643762356162333263383038353231353066373426763d6530643332303332" width="150">
+  <a href="https://storybook.js.org/">
+    <img alt="storybook" src="https://camo.githubusercontent.com/34ab12e06afbf839047bf3c19ed3e76082921f85/68747470733a2f2f64337676366c703535716a6171632e636c6f756466726f6e742e6e65742f6974656d732f33783051313531343431317a336c314f326131512f73746f7279626f6f6b732d6f6c642e706e673f582d436c6f75644170702d56697369746f722d49643d643430373439383635383733643762356162333263383038353231353066373426763d6530643332303332" width="150">
+  </a>
 </p>
 
 We already able to write code in monorepo with `typescript`, analyze it with `tslint` and `stylelint`, test it with `jest`. However, we still cannot see how our code will look like and even debug we cannot debug it properly.
