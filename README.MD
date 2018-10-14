@@ -32,8 +32,9 @@
     - [Storybook](#storybook-1)
     - [Testing](#testing-1)
     - [Build](#build)
+    - [Publish](#publish)
 
-Everyone is tired with creating templates for each type of NPM package with pre-configured skeletons, managing different dependencies across own packages, linking packages for local development with instant packages rebuilding which is wasting developers time, writing proper configuration for linters, `babel`, `typescript`, etc. The worst part appears when one of the key dependencies is getting breaking change upgrade, for instance `babel` - it produces plenty of duplicated changes in each of the package, massive amount of merge request to be reviewed and introduces high change to make a mistake (or even worse - forget about change) in on of the packages. Hopefully, it's year 2018 and JavaScript world has a solution for managing group of the packages in the one repository. This approach calls `monorepo`.
+Everyone is tired with creating templates for each type of NPM package with pre-configured skeletons, managing different dependencies across own packages, linking packages for local development with instant packages rebuilding which is wasting developers time, writing proper configuration for linters, `babel`, `typescript`, etc. The worst part appears when one of the key dependencies is getting breaking change upgrade, for instance `babel` - it produces plenty of duplicated changes in each of the package, massive amount of merge request to be reviewed and introduces high change to make a mistake (or even worse - forget about change) in one of the packages. Hopefully, it's year 2018 and JavaScript world has a solution for managing group of the packages in the one repository. This approach calls `monorepo`.
 
 There are many of approaches how to implement monorepo - `yarn workspaces`, `buck`, `pants`, `lerna`, and others. In this article we'll cover `lerna` approach with `yarn` as package manager. Moreover, `lerna` integrates so greatly with `yarn workspaces` as it allows to use workspaces commands directly in the repository even without `lerna`.
 
@@ -60,11 +61,11 @@ Local NPM registry will be used in whole article to avoid publishing to global r
 Configuration is simple tnd trivial:
 
 ```bash
-yarn global add verdaccio
-verdaccio &
+$ yarn global add verdaccio
+$ verdaccio &
 
-npm set registry http://localhost:4873/
-npm adduser --registry http://localhost:4873
+$ npm set registry http://localhost:4873/
+$ npm adduser --registry http://localhost:4873
 Username: test
 Password: ***
 Email: ***
@@ -1089,3 +1090,90 @@ const Input = ({ label, id, labelWidth, ...rest }) =>
     ),
   );
 ```
+
+### Publish
+
+It's time to publish our first package, just hit `yarn publish-all` and answer `Yes` for publishing question. The result should be like:
+
+```bash
+$ lerna publish
+lerna notice cli v3.4.0
+lerna info versioning independent
+lerna info Verifying npm credentials
+lerna info Looking for changed packages since initial commit.
+
+Changes:
+ - @taxi/input: 0.0.0 => 0.1.0
+
+? Are you sure you want to publish these packages? Yes
+lerna info git Pushing tags...
+lerna info publish Publishing packages to npm...
+lerna WARN EREGISTRY Registry "http://localhost:4873" does not support `npm access ls-packages`, skipping permission checks...
+lerna WARN ENOLICENSE Packages @taxi/input, @taxi/login-form are missing a license
+lerna notice
+lerna notice 📦  @taxi/input@0.1.0
+lerna notice === Tarball Contents ===
+lerna notice 640B  package.json
+lerna notice 358B  CHANGELOG.md
+lerna notice 389B  dist/index.js
+lerna notice 176B  dist/index.js.map
+lerna notice 1.8kB dist/Input.js
+lerna notice 1.9kB dist/Input.js.map
+lerna notice === Tarball Details ===
+lerna notice name:          @taxi/input
+lerna notice version:       0.1.0
+lerna notice filename:      taxi-input-0.1.0.tgz
+lerna notice package size:  2.3 kB
+lerna notice unpacked size: 5.3 kB
+lerna notice shasum:        8685cb61ee263c3af0b73d1daa2295f35eaa04d8
+lerna notice integrity:     sha512-y5o/D+DevV5oS[...]P2S2XqeRi89jA==
+lerna notice total files:   6
+lerna info published @taxi/input 0.1.0
+Successfully published:
+ - @taxi/input@0.1.0
+lerna success published 1 package
+```
+
+`Lerna` says that package was published successfully. Now we could check it with `yarn info` or through web interface for our local npm registry (`http://localhost:4873`):
+
+```bash
+$ yarn info @taxi/input
+yarn info v1.10.1
+{ name: '@taxi/input',
+  versions:
+   [ '0.1.0' ],
+  'dist-tags':
+   { latest: '0.1.0' },
+  version: '0.1.0',
+  description: 'Input component',
+  ...
+  }
+Done in 1.33s.
+```
+
+Moreover, `lerna` should create proper tags in our repository associated with released packages and versions:
+
+```bash
+$ git tag
+@taxi/input@0.1.0
+```
+
+Last, but not least, let's check that proper `Changelog` was created for our package:
+
+```bash
+$ cat packages/input/CHANGELOG.md
+# Change Log
+
+All notable changes to this project will be documented in this file.
+See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
+
+<a name="0.1.0"></a>
+# 0.1.0 (2018-10-14)
+
+
+### Features
+
+* **Input:** add default labelWidth ([8302608](https://github.com/serhii-havrylenko/monorepo-babel-ts-lerna-starter/commit/8302608))
+```
+
+Now we have first package successfully released, what's left? Second package which is dependant on our `@taxi/input` package is left. Integration with `lerna` would stay the same, simple as it is, however, it would requires some magic for making `storybook`, `jest` and `tslint` works with dependent packages and proper modules resolutions without rebuilding them all the time. More details will be in the next article.
