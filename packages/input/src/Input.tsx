@@ -30,7 +30,7 @@ const Wrapper = styled.div`
 const Label = styled<LabelProps, 'label'>('label')`
   margin-right: 10px;
   font-weight: bold;
-  width: ${({ labelWidth = 100 }) => labelWidth}px;
+  width: ${({ labelWidth = 120 }) => labelWidth}px;
 `;
 
 const NativeInput = styled.input`

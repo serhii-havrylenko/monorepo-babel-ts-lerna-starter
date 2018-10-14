@@ -45,7 +45,7 @@ exports[`Input should match snapshot with label 1`] = `
 .c1 {
   margin-right: 10px;
   font-weight: bold;
-  width: 100px;
+  width: 120px;
 }
 
 .c2 {
