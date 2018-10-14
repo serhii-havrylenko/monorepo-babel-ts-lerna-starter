@@ -25,6 +25,8 @@
       - [Tslint](#tslint-1)
       - [Addons](#addons)
     - [Final build](#final-build)
+    - [Committing your work](#committing-your-work)
+    - [Package publishing](#package-publishing)
   - [First package](#first-package)
     - [Development](#development)
     - [Storybook](#storybook-1)
@@ -804,9 +806,90 @@ As soon as we run `yarn build` command, `yarn` automatically will run `tsc` for 
 
 If they succeed, `build` will proceed and prepare all packages for publishing.
 
+### Committing your work
+
+Let's use conventional commit for committing our work for having consistent commit messages across the monorepo and as a benefit, proper version creation per package basing on [conventional-commit](https://github.com/lerna/lerna/tree/master/commands/version#--conventional-commits) approach.
+
+Let's install required packages:
+
+```bash
+yarn add -DW commitizen cz-lerna-changelog@^2.0.0
+```
+
+[cz-lerna-changelog](https://github.com/atlassian/cz-lerna-changelog) should be installed with version `^2.0.0` as it supports latest `lerna`
+
+Configuration is quite simple, just add next line to the root `package.json` file:
+
+```json
+{
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-lerna-changelog"
+    }
+  }
+}
+```
+
+and simple alias for commit command:
+
+```json
+{
+  "scripts": {
+    "commit": "git-cz"
+  }
+}
+```
+
+Now it's time to test it, just change something in one of the packages, stage changes with git and run `yarn commit`:
+
+```bash
+? Select the type of change that you're committing:
+❯ feat:     ✨  A new feature (note: this will indicate a release)
+  fix:      🛠  A bug fix (note: this will indicate a release)
+  docs:     Documentation only changes
+  style:    Changes that do not affect the meaning of the code
+            (white-space, formatting, missing semi-colons, etc)
+  refactor: A code change that neither fixes a bug nor adds a feature
+  perf:     A code change that improves performance
+```
+
 ### Package publishing
 
+As described earlier, `lerna` is used for publishing packages. It could be configured quite easily with next lines in the `lerna.json`:
 
+```json
+{
+  "command": {
+    "publish": {
+      "conventionalCommits": true,
+      "registry": "http://localhost:4873",
+      "access": "public",
+      "npmClient": "yarn",
+      "allowBranch": ["master", "feature/*"]
+    }
+  }
+}
+```
+
+The config is self descriptive, however, the most important parts are:
+
+- `registry` - specifies where do we want to publish our packages
+- `conventionalCommits` - allows us to use conventional commits for determining new versions
+
+All other options could be found on the official `lerna` documentation.
+
+Now we could add simple alias to the our scripts for having `publish-all` command there:
+
+```json
+{
+  "scripts": {
+    "prepublish-all": "yarn build",
+    "publish-all": "lerna publish"
+  }
+}
+```
+
+That's it. The key part is configured and ready to be used. Time to test it with real packages.
 
 ## First package
 

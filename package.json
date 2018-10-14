@@ -7,17 +7,20 @@
   "description": "Test monorepo with ts and lerna",
   "scripts": {
     "build-storybook": "build-storybook",
-    "tsc": "tsc",
     "prebuild": "run-p tsc lint",
     "build": "lerna exec --parallel 'BABEL_ENV=build babel src --root-mode upward --out-dir dist --source-maps --extensions .ts,.tsx --delete-dir-on-start --no-comments'",
+    "commit": "git-cz",
     "fix": "run-p -c 'lint:ts-* --fix'",
     "lint:css": "stylelint 'packages/**/*.ts{,x}'",
-    "lint:ts": "run-p -c lint:ts-*",
     "lint:ts-prod": "tslint --config tslint.prod.json 'packages/**/*.ts{,x}' --exclude '**/*.{test,story}.ts{,x}'",
     "lint:ts-test": "tslint --config tslint.test.json 'packages/**/*.{test,story}.ts{,x}'",
+    "lint:ts": "run-p -c lint:ts-*",
     "lint": "run-p -c lint:*",
+    "prepublish-all": "yarn build",
+    "publish-all": "lerna publish",
     "storybook": "start-storybook -p 6006",
-    "test": "jest"
+    "test": "jest",
+    "tsc": "tsc"
   },
   "repository": {
     "type": "git",
@@ -25,7 +28,6 @@
   },
   "author": "Serhii Havrylenko",
   "license": "ISC",
-  "private": true,
   "resolutions": {
     "babel-core": "^7.0.0-bridge.0"
   },
