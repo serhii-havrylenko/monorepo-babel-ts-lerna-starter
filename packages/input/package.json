@@ -9,14 +9,10 @@
   "files": [
     "dist"
   ],
-  "publishConfig": {
-    "registry": "https://registry.yarnpkg.com"
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/serhii-havrylenko/monorepo-babel-ts-lerna-starter.git"
   },
-  "private": true,
   "peerDependencies": {
     "react": "^16.5.1",
     "styled-components": "^3.4.6"
