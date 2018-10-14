@@ -51,6 +51,8 @@
     "awesome-typescript-loader": "^5.2.1",
     "babel-core": "7.0.0-bridge.0",
     "babel-loader": "^8.0.2",
+    "commitizen": "^3.0.2",
+    "cz-lerna-changelog": "^2.0.0",
     "enzyme": "^3.6.0",
     "enzyme-adapter-react-16": "^1.5.0",
     "enzyme-to-json": "^3.0.0-beta6",
@@ -75,5 +77,10 @@
     "tslint-react": "^3.6.0",
     "typescript": "^3.0.3",
     "webpack": "^4.19.0"
+  },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-lerna-changelog"
+    }
   }
 }
