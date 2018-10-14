@@ -53,7 +53,35 @@ Packages:
 
 ### Local NPM registry
 
-Local NPM registry will be used in whole article to avoid publishing to global registry plenty of test packages.
+Local NPM registry will be used in whole article to avoid publishing to global registry plenty of test packages. There are plenty of ways how to set up private NPM repository. In this example [Verdaccio](https://github.com/verdaccio/verdaccio) will be used for such purpose.
+
+Configuration is simple tnd trivial:
+
+```bash
+yarn global add verdaccio
+verdaccio &
+
+npm set registry http://localhost:4873/
+npm adduser --registry http://localhost:4873
+Username: test
+Password: ***
+Email: ***
+```
+
+Now we could test how it works:
+
+```
+yarn info @babel/cli
+```
+
+should still show package details and in console where we started `verdaccio` we should see incoming request
+
+```
+ http --> 200, req: 'GET https://registry.npmjs.org/@babel%2Fcli' (streaming)
+ http --> 200, req: 'GET https://registry.npmjs.org/@babel%2Fcli', bytes: 0/85596
+```
+
+Moreover, you could open [`http://localhost:4873/`](http://localhost:4873/) for searching published packages.
 
 ## Getting started
 
@@ -775,6 +803,10 @@ As we already have build command as well as code formatting and static code anal
 As soon as we run `yarn build` command, `yarn` automatically will run `tsc` for type checks, `tslint` for code quality analyzing and `test` on each of packages in the monorepo.
 
 If they succeed, `build` will proceed and prepare all packages for publishing.
+
+### Package publishing
+
+
 
 ## First package
 
