@@ -37,7 +37,7 @@ There are many of approaches how to implement monorepo - `yarn workspaces`, `buc
 
 ## The goal
 
-The goal of this article is to create monorepo starter with Babel for building packages, TypeScript for having benefits of statically typed languages in the JavaScript world, static code analyzing tools (Tslint, Stylelint), Prettier for having automatically formated code (no more tabs or spaces holly wars), Storybook for developing components, and last, but not least - Lerna for publishing.
+The goal of this article is to create monorepo starter with Babel for building packages, TypeScript for having benefits of statically typed languages in the JavaScript world, static code analyzing tools (Tslint, Stylelint), Prettier for having automatically formated code (no more tabs or spaces holly wars), Storybook for developing components, and last, but not least - Lerna for publishing. All components will be written with React and StyledComponents for CSS-in-JS styling.
 
 Let's not waste time on long talks about what are those tools and why they are so important, and proceed to the real configuration and will see how everyone will benefit from each in the future.
 
@@ -155,6 +155,12 @@ $ yarn add -DW @babel/cli @babel/core @babel/preset-typescript @babel/preset-env
   </a>
 </p>
 
+Configuration is quite simple and trivial - [@babel/preset-react](https://babeljs.io/docs/en/babel-preset-react) and [@babel/preset-typescript](https://babeljs.io/docs/en/babel-preset-typescript) plus simple config for [@babel/preset-env](https://babeljs.io/docs/en/babel-preset-env).
+
+In Release candidate version, Babel team has removed support for `stage-*` and `preset-201*` packages, so it means that all actually used plugins should be set by users manually.
+
+Apart from removing `stage-*` packages, Babel has changed approach for looking up config files - it looks for config in `cwd` till the first `package.json`. More details could be found in [official Babel documentation](https://babeljs.io/docs/en/config-files)
+
 Let's configure `babel.config.js` with next data:
 
 ```javascript
@@ -197,13 +203,9 @@ module.exports = (api) => {
 };
 ```
 
-Configuration is quite simple and trivial - [@babel/preset-react](https://babeljs.io/docs/en/babel-preset-react) and [@babel/preset-typescript](https://babeljs.io/docs/en/babel-preset-typescript) plus simple config for [@babel/preset-env](https://babeljs.io/docs/en/babel-preset-env). In Release candidate version, Babel team has removed support for `stage-*` and `preset-201*` packages, so it means that all actually used plugins should be set by users manually.
-
-Apart from removing `stage-*` packages, Babel has changed approach for looking up config files - it looks for config in `cwd` till the first `package.json`. More details could be found in [official Babel documentation](https://babeljs.io/docs/en/config-files)
-
 #### Building packages
 
-Due to changes for config lookup, build command in monorepo should have path to `.babelrc` or `babel.config.js` specified or as [--root-mode option](https://babeljs.io/docs/en/options#rootmode). It could be done directly in build commands:
+Due to changes for config lookup, build command in monorepo should have path to `.babelrc` or `babel.config.js` specified, or as [--root-mode option](https://babeljs.io/docs/en/options#rootmode). It could be done directly in build commands:
 
 1.  In root package.json:
 
@@ -225,7 +227,7 @@ Due to changes for config lookup, build command in monorepo should have path to 
 }
 ```
 
-Another way how to treat parent babel config is `extends` option provided by latest babel. The easiest approach for that is setting next lines in `package.json` on package level:
+3. Another way how to treat parent babel config is `extends` option provided by latest babel. The easiest approach for that is setting next lines in `package.json` on package level:
 
 ```json
 {
@@ -233,7 +235,7 @@ Another way how to treat parent babel config is `extends` option provided by lat
 }
 ```
 
-In this case build command doesn't require passing path to babel config and will be simplified:
+- In this case build command doesn't require passing path to babel config and will be simplified:
 
 ```json
 {
@@ -243,7 +245,7 @@ In this case build command doesn't require passing path to babel config and will
 }
 ```
 
-Last and easiest option is just add `--root-mode=upward` option to the build command which allows to resolve babel config upward from the current root. In this case build command looks like:
+4. Last and easiest option is just add `--root-mode=upward` option to the build command which allows to resolve babel config upward from the current root. In this case build command looks like:
 
 ```json
 {
@@ -285,7 +287,6 @@ and put it in `prebuild` step to run type checks automatically prior each build
 ```json
 {
   "scripts": {
-    "tsc": "tsc",
     "prebuild": "tsc"
   }
 }
@@ -296,12 +297,13 @@ and put it in `prebuild` step to run type checks automatically prior each build
 Lerna does not have ability to add peer dependency for packages. Nevertheless, it can be done with yarn workspaces - all we need is just add workspaces definition to the root `package.json`
 
 ```json
-  "workspaces": [
-    "packages/*"
-  ]
+{
+  "workspaces": ["packages/*"]
+}
 ```
 
-In our case `react`, as well as `styled-components` for CSS-in-JS tool, are definitely peerDependencies as our packages will have them, however we don't want to have plenty of dependencies on each package installed separately.
+In our case `react`, as well as `styled-components`, are defined as peerDependencies as all our packages will have them, however we don't want to have plenty of dependencies on each package installed separately.
+
 As we decided to set `react` and `styled-components` as peer dependency, we still should have them, and associated types definitions for typescript, installed in our `node_modules`. So let's add them as `devDependency` to the root of monorepo:
 
 ```bash
@@ -367,7 +369,7 @@ Installation and configuration process as simple as with `tslint`:
 yarn add -DW stylelint stylelint-processor-styled-components stylelint-config-styled-components stylelint-config-standard
 ```
 
-and create simple config file for it `tslint.json`:
+Create simple config file for it `tslint.json`:
 
 ```json
 {
@@ -390,7 +392,7 @@ Now static code analyzer could be run with simple `yarn lint:css` command.
 
 #### All together
 
-For now we have `lint:ts` for checking typescript code quality and `lint:css` for CSS, however, they are still separated commands and it would be uncomfortable to run them separately all the time. Let's group them in one unified `lint` command:
+For now we have `lint:ts` for checking typescript code quality and `lint:css` for CSS, however, they are still separated commands and it would be uncomfortable to run them separately all the time. Let's group them in one unified `lint` command and run it with `npm-run-al`:
 
 ```bash
 yarn add -DW npm-run-all
@@ -481,9 +483,7 @@ Last but not least, let's add script to the root `package.json` for automatic co
   </a>
 </p>
 
-For now we have TypeScript for checking types, `tslint` and `stylelint` for static code quality analyzing. Last, but not least part is testing. Let's use `jest` as test runner and test assertion tool. It has the best support for `react`, including snapshot testing, extensive mocking library, build-in coverage reporting and ability to run tests in different processes.
-
-Let's install `jest` and `ts-jest` for running `typescript` code:
+For now we have TypeScript for checking types, `tslint` and `stylelint` for static code quality analyzing. Last, but not least part is testing. Let's use `jest` as test runner and test assertion tool. It has the best support for `react`, including snapshot testing, extensive mocking library, build-in coverage reporting and ability to run tests in different processes. `ts-jest` should be used for running `typescript` code. Installation is also quite simple:
 
 ```bash
 yarn add -DW jest ts-jest @types/jest
@@ -539,7 +539,7 @@ Notes:
 
 - `coverageThreshold` is protecting us from writing not enough tests and having poor test coverage.
 
-As soon as you have basic config, it's time to install `enzyme` which is extending support for `react`:
+As soon as we have basic config, it's time to install `enzyme` (and all related libraries) which is extending support for `react`:
 
 ```bash
 yarn add -DW enzyme enzyme-adapter-react-16 @types/enzyme @types/enzyme-adapter-react-16
@@ -568,7 +568,7 @@ We are almost there, we are able to run tests and create proper snapshots. Never
 yarn add -DW jest-styled-components
 ```
 
-`import 'jest-styled-components'` should be added to `jest/setupTests.ts`.
+`import 'jest-styled-components'` should be added to the `jest/setupTests.ts`.
 
 Just to sum up, `jest.config.js`:
 
@@ -621,13 +621,13 @@ That's it, `jest` is configured and could be run. Let's add `test` to the root `
   </a>
 </p>
 
-We already able to write code in monorepo with `typescript`, analyze it with `tslint` and `stylelint`, test it with `jest`. However, we still cannot see how our code will look like and even debug we cannot debug it properly.
+We already able to write code in monorepo with `typescript`, analyze it with `tslint` and `stylelint`, test it with `jest`. However, we still cannot see how our components will look like and we cannot even debug it properly.
 
 There are plenty of ways how to present react component. Let's go with most famous one - `storybook`. It allows to present separate components and/or group of them as well as testing it in real browsers, and having documentation close to it.
 
 #### Installation
 
-Latest stable version of `storybook@3.4.10` works with `webpack@3`, `babel@^6` and `typescript@^2.7`. As we have latest `@babel@^7` and `typescript@^3` it's better to use next version of storybook which has the same set of dependencies, even if it's bleeding edge version.
+Latest stable version of `storybook@3.4.10` works with `webpack@3`, `babel@^6` and `typescript@^2.7`. As we have latest `@babel@^7` and `typescript@^3` it's better to use `next` version of storybook which has the same set of dependencies as our monorepo, even if it's bleeding edge version.
 
 If you do it for the first time, you should have `@storybook@cli` installed globally on your machine and init:
 
@@ -676,7 +676,7 @@ and associated configuration part in `tsconfig.json` for `awesome-typescript-loa
 }
 ```
 
-Configuration part is ready, we could start storybook with `yarn storybook` command
+Configuration part is ready, we could start storybook with `yarn storybook` command.
 
 #### Tslint
 
@@ -712,7 +712,7 @@ Another config for the test phase called `tslint.test.json`:
 
 `"no-implicit-dependencies": false` into `tslint.json` to disable this rule by default. This one is need to fix issues with IDEs as by default they use `tslint.json` for all files, whether it test or production code.
 
-Last, but not least, scripts in the root `package.json`
+Last, but not least, scripts in the root `package.json` have to be adjusted:
 
 ```json
 {
@@ -946,7 +946,7 @@ It's time to build our package. Simply run
 yarn build
 ```
 
-and we should have `packages/input/dist` folder with all compiled files. The most important one is `packages/input/dist/Input.js` which has :
+and we should have `packages/input/dist` folder with all compiled files. The most important one is `packages/input/dist/Input.js` which has:
 
 ```javascript
 const Input = ({ label, id, labelWidth, ...rest }) =>
