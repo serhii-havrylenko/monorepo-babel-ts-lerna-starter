@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "description": "Login form component",
   "main": "/dist/index.js",
+  "types": "dist/index.d.ts",
   "author": "chef",
   "license": "MIT",
   "repository": {
@@ -14,6 +15,7 @@
     "styled-components": "^3.4.6"
   },
   "scripts": {
+    "tsc": "tsc --project tsconfig.build.json",
     "build": "BABEL_ENV=build babel src --root-mode upward --out-dir dist --source-maps --extensions .ts,.tsx --delete-dir-on-start --no-comments"
   },
   "files": [

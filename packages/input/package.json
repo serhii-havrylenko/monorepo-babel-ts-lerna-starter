@@ -6,6 +6,7 @@
   "homepage": "https://github.com/serhii-havrylenko/monorepo-babel-ts-lerna-starter",
   "license": "MIT",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "files": [
     "dist"
   ],

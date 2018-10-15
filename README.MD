@@ -33,6 +33,11 @@
     - [Testing](#testing-1)
     - [Build](#build)
     - [Publish](#publish)
+  - [Multiple packages](#multiple-packages)
+    - [Development](#development-1)
+      - [Declarations generation](#declarations-generation)
+      - [Tslint](#tslint-2)
+      - [Drawbacks](#drawbacks)
 
 Everyone is tired with creating templates for each type of NPM package with pre-configured skeletons, managing different dependencies across own packages, linking packages for local development with instant packages rebuilding which is wasting developers time, writing proper configuration for linters, `babel`, `typescript`, etc. The worst part appears when one of the key dependencies is getting breaking change upgrade, for instance `babel` - it produces plenty of duplicated changes in each of the package, massive amount of merge request to be reviewed and introduces high change to make a mistake (or even worse - forget about change) in one of the packages. Hopefully, it's year 2018 and JavaScript world has a solution for managing group of the packages in the one repository. This approach calls `monorepo`.
 
@@ -136,12 +141,12 @@ By default lerna is using NPM, however, it's quite simple to set Yarn as package
 {
   "packages": ["packages/*"],
   "version": "independent",
-  "useWorkspace": true,
+  "useWorkspaces": true,
   "npmClient": "yarn"
 }
 ```
 
-Moreover, with `"useWorkspace": true` we allow `lerna` to support `yarn workspaces` and with `"packages": ["packages/*"]` we specify in which folder(s) we would have all our packages.
+Moreover, with `"useWorkspaces": true` we allow `lerna` to support `yarn workspaces` and with `"packages": ["packages/*"]` we specify in which folder(s) we would have all our packages.
 
 ### TypeScript
 
@@ -879,13 +884,13 @@ The config is self descriptive, however, the most important parts are:
 
 All other options could be found on the official `lerna` documentation.
 
-Now we could add simple alias to the our scripts for having `publish-all` command there:
+Now we could add simple alias to the our scripts for having `release` command there:
 
 ```json
 {
   "scripts": {
-    "prepublish-all": "yarn build",
-    "publish-all": "lerna publish"
+    "prerelease": "yarn build",
+    "release": "lerna publish"
   }
 }
 ```
@@ -1093,7 +1098,7 @@ const Input = ({ label, id, labelWidth, ...rest }) =>
 
 ### Publish
 
-It's time to publish our first package, just hit `yarn publish-all` and answer `Yes` for publishing question. The result should be like:
+It's time to publish our first package, just hit `yarn release` and answer `Yes` for publishing question. The result should be like:
 
 ```bash
 $ lerna publish
@@ -1176,4 +1181,313 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 * **Input:** add default labelWidth ([8302608](https://github.com/serhii-havrylenko/monorepo-babel-ts-lerna-starter/commit/8302608))
 ```
 
-Now we have first package successfully released, what's left? Second package which is dependant on our `@taxi/input` package is left. Integration with `lerna` would stay the same, simple as it is, however, it would requires some magic for making `storybook`, `jest` and `tslint` works with dependent packages and proper modules resolutions without rebuilding them all the time. More details will be in the next article.
+Now we have first package successfully released, what's left? Second package which is dependant on our `@taxi/input` package is left. Integration with `lerna` would stay the same, simple as it is, however, it would requires some magic for making `storybook`, `jest` and `tslint` works with dependent packages and proper modules resolutions without rebuilding them all the time. Plus, as a bonus we'll generate types declarations for our packages and include them as a part of final build.
+
+More details will be in the next article.
+
+## Multiple packages
+
+As everyone knows, the main goal of the monorepo is to have multiple packages inside one repository for easily solving dependencies between them and simple release process.
+
+Let's create second package which is dependant on our `@taxi/input` and check how our tools works with it.
+
+### Development
+
+Just create second package in the same way as the first one. In our example it would be `@taxi/login-form` with next content:
+
+```typescript
+import { Input } from '@taxi/input';
+import * as React from 'react';
+import styled from 'styled-components';
+
+const Wrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  margin: 10px;
+`;
+
+const ButtonsWrapper = styled.div`
+  text-align: right;
+`;
+
+export interface LoginFormProps {
+  onClick?: () => void;
+}
+
+export const LoginForm: React.SFC<LoginFormProps> = ({ onClick }) => (
+  <Wrapper>
+    <Input id="name" label="Name" />
+    <Input id="password" label="Password" />
+
+    <ButtonsWrapper>
+      <button onClick={onClick}>Log in</button>
+    </ButtonsWrapper>
+  </Wrapper>
+);
+```
+
+Now we could add `@taxi/input` to the list of dependencies. This could be achieved easily with next command:
+
+```bash
+yarn lerna add @taxi/input --scope @taxi/login-form
+```
+
+As soon as we have it, it's time to run `tsc` and check what `typescript` thinks about our code:
+
+```bash
+$ yarn tsc
+yarn run v1.10.1
+$ tsc
+packages/login-form/src/LoginForm.tsx:1:23 - error TS2307: Cannot find module '@taxi/input'.
+
+1 import { Input } from '@taxi/input';
+                        ~~~~~~~~~~~~~
+error Command failed with exit code 1.
+```
+
+It happens because in the `package.json` file for `@taxi/input` package we have `"main": "dist/index.js"` which is pointing to the build version of the package and we have not run `build` command. So, let's build our packages and check `tsc` again:
+
+```bash
+$ yarn tsc
+yarn run v1.10.1
+$ tsc
+packages/login-form/src/LoginForm.tsx:1:23 - error TS7016: Could not find a declaration file for module '@taxi/input'. 'monorepo-babel-ts/packages/input/dist/index.js' implicitly has an 'any' type.
+  Try `npm install @types/taxi__input` if it exists or add a new declaration (.d.ts) file containing `declare module '@taxi/input';`
+
+1 import { Input } from '@taxi/input';
+                        ~~~~~~~~~~~~~
+error Command failed with exit code 1.
+```
+
+Now `typescript` could find our package, however it doesn't know anything about typings for that module. It happens because we built our package with `babel` and it cannot create declaration files.
+
+#### Declarations generation
+
+Let's configure `tsc` to generate types declarations for our modules. As a first step, we have to move `login-form` package to the different folder (we would need to have only compilable with `tsc` packages in the `packages` directory).
+
+We would need:
+
+`tsconfig.build.json` in the root of monorepo with:
+
+```json
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "emitDeclarationOnly": true,
+    "declaration": true
+  },
+  "include": [],
+  "exclude": ["**/*.story.*", "**/*.test.*", "dist"]
+}
+```
+
+Where we specify that we need to emit declarations only and exclude test, stories and dist folder.
+
+Next we would need `tsconfig.build.json` inside the each of our packages with:
+
+```json
+{
+  "extends": "../../tsconfig.build.json",
+  "compilerOptions": {
+    "declarationDir": "./dist",
+    "rootDir": "./src",
+    "baseUrl": "./"
+  },
+  "include": ["./src"]
+}
+```
+
+Here we would specify from where we would like to take files for generating declarations and where we would like to put them.
+
+Now we would need script inside the root of monorepo for generating declarations:
+
+```json
+{
+  "scripts": {
+    "build:declarations": "lerna exec --parallel 'tsc --project ./tsconfig.build.json'",
+    "postbuild": "yarn build:declarations"
+  }
+}
+```
+
+Time to test it:
+
+```bash
+$ yarn build:declarations
+yarn run v1.10.1
+$ lerna exec --parallel 'tsc --project ./tsconfig.build.json'
+lerna notice cli v3.4.0
+lerna info versioning independent
+lerna info Executing command in 1 package: "tsc --project ./tsconfig.build.json"
+lerna success exec Executed command in 1 package: "tsc --project ./tsconfig.build.json"
+```
+
+As the result we should have `*.d.ts` files generated in the dist folder:
+
+```bash
+$ find packages/input/dist/ -name '*.d.ts'
+packages/input/dist/Input.d.ts
+packages/input/dist/index.d.ts
+```
+
+Now we could check that `@taxi/login-form` works as well, just return it back to the `packages` directory and check that `tsc` works now.
+
+```bash
+$ yarn tsc
+yarn run v1.10.1
+$ tsc
+Done in 4.22s.
+```
+
+#### Tslint
+
+As soon as we generate declarations and run `tslint` we would have errors like:
+
+```
+ERROR: packages/input/dist/Input.d.ts[13, 38]: Replace `·InputWithLabelProps` with `⏎··|·InputWithLabelProps⏎·`
+ERROR: packages/input/dist/Input.d.ts[15, 3]: Delete `··`
+ERROR: packages/input/dist/Input.d.ts[16, 1]: Delete `··`
+```
+
+It happens because `tslint` tries to validate `*d.ts` files as well. Let's add the to the ignore. With latest version of `tslint` we could do it in configuration file, so:
+
+1. `tslint.prod.json`
+
+```json
+{
+  "linterOptions": {
+    "exclude": ["**/*.d.ts", "**/*.{test,story}.ts{,x}"]
+  }
+}
+```
+
+2. `tslint.test.json`
+
+```json
+{
+  "linterOptions": {
+    "exclude": ["**/*.d.ts"]
+  }
+}
+```
+
+Now if we run `yarn lint:ts` we won't have any errors related to `.d.ts` files.
+
+#### Drawbacks
+
+We are able to generate declarations for all packages, run `storybook` and `tests`, however, as soon as we change `@taxi/input` we would not see any changes in the `storybook` for `@taxi/login-form` because we still would use previously built version. To see these changes we would need to rebuild packages one more time. The same applies to the `jest` runs.
+
+This approach looks not so cool if each change in one of the packages would require constant rebuild. Lucky we have better option how to fix this issues. More details in the next paragraphs.
+
+### Typescript
+
+Firstly, let's remove all `dist` folders inside our packages to have clean code only. On this stage `tsc` should still fail. Now we could extend `tsconfig.json` with:
+
+```json
+{
+  "compilerOptions": {
+    "paths": {
+      "@taxi/*": ["packages/*/src"],
+      "*": ["node_modules", "packages"]
+    }
+  }
+}
+```
+
+`"@taxi/*": ["packages/*/src"]` tells to `tsc` where to search for `@taxi/` packages. In our case we would like to search them in `packages/*/src` folders as there we have our source code.
+
+Now we could run `tsc` and it would finish successfully without any errors like we had earlier.
+
+### Storybook
+
+As `storybook` is using `webpack` with `awesome-typescript-loader` and `babel` integration, as soon as we start storybook we would get next errors:
+
+```bash
+ERROR in ./packages/login-form/src/LoginForm.tsx
+Module not found: Error: Can't resolve '@taxi/input' in 'monorepo-babel-ts/packages/login-form/src'
+@ ./packages/login-form/src/LoginForm.tsx 8:13-35
+```
+
+It happens even when `tsc` could find those modules. The reason of this is simple: `tsc` checks files, `babel` transforms them and tries to execute, and it doesn't know anything about `@taxi/input` as `main` still points to the `dist` folder.
+
+However, we could override it with aliases for `webpack`. It could be done in two ways:
+
+1. Manual one, in this case we'll have to define each package which we would like to have in `webpack.config.resolve.alias`. This approach is simple, but it introduces potential issues in the future when someone could forget about aliases or introduces wrong one.
+2. Automated one with next info in the `storybook/webpack.config.js`
+
+```javascript
+const path = require('path');
+const { lstatSync, readdirSync } = require('fs');
+
+const basePath = path.resolve(__dirname, '../', 'packages');
+const packages = readdirSync(basePath).filter((name) =>
+  lstatSync(path.join(basePath, name)).isDirectory(),
+);
+
+module.exports = (baseConfig, env, config) => {
+  config.module.rules.push({
+    test: /\.(ts|tsx)$/,
+    loader: require.resolve('awesome-typescript-loader'),
+  });
+  config.resolve.extensions.push('.ts', '.tsx');
+  Object.assign(config.resolve.alias, {
+    ...packages.reduce(
+      (acc, name) => ({
+        ...acc,
+        [`@taxi/${name}`]: path.join(basePath, name, 'src'),
+      }),
+      {},
+    ),
+  });
+
+  return config;
+};
+```
+
+This code is rather simple and self explanatory. The most important part is in reducer for building aliases:
+
+```javascript
+packages.reduce(
+  (acc, name) => ({
+    ...acc,
+    [`@taxi/${name}`]: path.join(basePath, name, 'src'),
+  }),
+  {},
+);
+```
+
+With this reducer we would have automatically generated list of our packages from `packages` directory.
+
+Now we could start storybook and check that it works, moreover, if we change `@taxi/input` and check stories for `@taxi/login-form` they would have changes immediately without even building packages.
+
+### Jest
+
+We have `tsc` and `storybook` working, however, if we run `jest` it would fail with:
+
+```bash
+ FAIL  packages/login-form/src/LoginForm.test.tsx
+  ● Test suite failed to run
+
+    Cannot find module '@taxi/input' from 'LoginForm.test.tsx'
+```
+
+It happens because `jest` doesn't tolerate `tsconfig.json`, `webpack` aliases or even `babel-webpack-aliases`. However, this problem could be solved with simple line in `jest.config.js`:
+
+```javascript
+{
+  moduleNameMapper: {
+    '@taxi/(.+)$': '<rootDir>packages/$1/src',
+  },
+}
+```
+
+`'@taxi/(.+)$': '<rootDir>packages/$1/src` will tell jest where to find source code for `@taxi/` packages and again it points to the `src` instead of `dist`.
+
+Now we could run `yarn test` and it will work as expected without even building packages.
+
+## Final words
+
+THe goal of the article was to configure monorepo with `lerna`, `typescript`, `babel`, `tslint`, `stylelint`, `jest` and `semantic-release` and it was achieved. We do have monorepo with all those tools in place and it's ready for real usage. Packages could be created, developed, tested, presented and published easily with one commands in the root of monorepo.
+
+For those who doesn't want to use `babel`, but pure `typescript`, changes would be extremely simple - just drop `babel.config.js`, change `awesome-typescript-loader` for using `tsconfig.json` instead of `babel`, `ts-jest` to use it as well and `build` command from `babel` to `tsc` (just replace `emitDeclarationOnly` to `false` in `tsconfig.build.json`) and that's it, `typescript` could be used without `babel`.

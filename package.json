@@ -4,23 +4,26 @@
   "workspaces": [
     "packages/*"
   ],
+  "private": true,
   "description": "Test monorepo with ts and lerna",
   "scripts": {
     "build-storybook": "build-storybook",
     "prebuild": "run-p tsc lint",
     "build": "lerna exec --parallel 'BABEL_ENV=build babel src --root-mode upward --out-dir dist --source-maps --extensions .ts,.tsx --delete-dir-on-start --no-comments'",
+    "postbuild": "yarn build:declarations",
     "commit": "git-cz",
     "fix": "run-p -c 'lint:ts-* --fix'",
     "lint:css": "stylelint 'packages/**/*.ts{,x}'",
-    "lint:ts-prod": "tslint --config tslint.prod.json 'packages/**/*.ts{,x}' --exclude '**/*.{test,story}.ts{,x}'",
+    "lint:ts-prod": "tslint --config tslint.prod.json 'packages/**/*.ts{,x}'",
     "lint:ts-test": "tslint --config tslint.test.json 'packages/**/*.{test,story}.ts{,x}'",
     "lint:ts": "run-p -c lint:ts-*",
     "lint": "run-p -c lint:*",
-    "prepublish-all": "yarn build",
-    "publish-all": "lerna publish",
+    "prerelease": "yarn build",
+    "release": "lerna publish",
     "storybook": "start-storybook -p 6006",
     "test": "jest",
-    "tsc": "tsc"
+    "tsc": "tsc",
+    "build:declarations": "lerna exec --parallel 'tsc --project ./tsconfig.build.json'"
   },
   "repository": {
     "type": "git",
