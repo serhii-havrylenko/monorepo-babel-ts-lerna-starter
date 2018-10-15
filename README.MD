@@ -38,6 +38,10 @@
       - [Declarations generation](#declarations-generation)
       - [Tslint](#tslint-2)
       - [Drawbacks](#drawbacks)
+    - [Typescript](#typescript-1)
+    - [Storybook](#storybook-2)
+    - [Jest](#jest)
+  - [Final words](#final-words)
 
 Everyone is tired with creating templates for each type of NPM package with pre-configured skeletons, managing different dependencies across own packages, linking packages for local development with instant packages rebuilding which is wasting developers time, writing proper configuration for linters, `babel`, `typescript`, etc. The worst part appears when one of the key dependencies is getting breaking change upgrade, for instance `babel` - it produces plenty of duplicated changes in each of the package, massive amount of merge request to be reviewed and introduces high change to make a mistake (or even worse - forget about change) in one of the packages. Hopefully, it's year 2018 and JavaScript world has a solution for managing group of the packages in the one repository. This approach calls `monorepo`.
 
