@@ -43,7 +43,7 @@
     - [Jest](#jest)
   - [Final words](#final-words)
 
-Everyone is tired with creating templates for each type of NPM package with pre-configured skeletons, managing different dependencies across own packages, linking packages for local development with instant packages rebuilding which is wasting developers time, writing proper configuration for linters, `babel`, `typescript`, etc. The worst part appears when one of the key dependencies is getting breaking change upgrade, for instance `babel` - it produces plenty of duplicated changes in each of the package, massive amount of merge request to be reviewed and introduces high change to make a mistake (or even worse - forget about change) in one of the packages. Hopefully, it's year 2018 and JavaScript world has a solution for managing group of the packages in the one repository. This approach calls `monorepo`.
+Everyone is tired with creating templates for each type of NPM package with pre-configured skeletons, managing different dependencies across own packages, linking packages for local development with instant packages rebuilding which is "wasting developers time", writing proper configuration for linters, `babel`, `typescript`, etc, and adds a lot of repeatable steps for developers. The worst part appears when one of the key dependencies is getting breaking change upgrade, for instance `babel` - it produces plenty of duplicated changes in each of the package, massive amount of merge request to be reviewed and introduces high change to make a mistake (or even worse - forget about change) in one of the packages. Hopefully, it's year 2018 and JavaScript world has a solution for managing group of the packages in the one repository. This approach calls `monorepo`.
 
 There are many of approaches how to implement monorepo - `yarn workspaces`, `buck`, `pants`, `lerna`, and others. In this article we'll cover `lerna` approach with `yarn` as package manager. Moreover, `lerna` integrates so greatly with `yarn workspaces` as it allows to use workspaces commands directly in the repository even without `lerna`.
 
@@ -122,7 +122,7 @@ Lerna supports two types of packages versioning:
 
 When **exact** type is chosen, Lerna will use the same version for all packages in monorepo. In case when **independent** version is selected, Lerna will release each package with independent version. More details about versioning is on [official Lerna page](https://github.com/lerna/lerna#how-it-works)
 
-This article will consider only independent versioning for all packages as on the initial stage of packages development some packages would have much more releases then others, and with independent versioning we would have only required packages released.
+This article will consider only independent versioning for all packages as on the initial stage of packages development of some packages would have much more releases then others, and with independent versioning we would have only required packages released.
 
 Going back to the real examples:
 
@@ -1492,6 +1492,6 @@ Now we could run `yarn test` and it will work as expected without even building 
 
 ## Final words
 
-THe goal of the article was to configure monorepo with `lerna`, `typescript`, `babel`, `tslint`, `stylelint`, `jest` and `semantic-release` and it was achieved. We do have monorepo with all those tools in place and it's ready for real usage. Packages could be created, developed, tested, presented and published easily with one commands in the root of monorepo.
+The goal of the article was to configure monorepo with `lerna`, `typescript`, `babel`, `tslint`, `stylelint`, `jest` and `semantic-release` and it was achieved. We do have monorepo with all those tools in place and it's ready for real usage. Packages could be created, developed, tested, presented and published easily with one commands in the root of monorepo.
 
 For those who doesn't want to use `babel`, but pure `typescript`, changes would be extremely simple - just drop `babel.config.js`, change `awesome-typescript-loader` for using `tsconfig.json` instead of `babel`, `ts-jest` to use it as well and `build` command from `babel` to `tsc` (just replace `emitDeclarationOnly` to `false` in `tsconfig.build.json`) and that's it, `typescript` could be used without `babel`.
