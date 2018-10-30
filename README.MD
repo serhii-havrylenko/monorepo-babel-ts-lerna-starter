@@ -1233,7 +1233,7 @@ export const LoginForm: React.SFC<LoginFormProps> = ({ onClick }) => (
 Now we could add `@taxi/input` to the list of dependencies. This could be achieved easily with next command:
 
 ```bash
-yarn lerna add @taxi/input --scope @taxi/login-form
+yarn lerna add @taxi/input --scope=@taxi/login-form
 ```
 
 As soon as we have it, it's time to run `tsc` and check what `typescript` thinks about our code:
