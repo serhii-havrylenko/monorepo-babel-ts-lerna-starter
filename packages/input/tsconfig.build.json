@@ -1,6 +1,7 @@
 {
   "extends": "../../tsconfig.build.json",
   "compilerOptions": {
+    "skipLibCheck": true,
     "declarationDir": "./dist",
     "rootDir": "./src",
     "baseUrl": "./"

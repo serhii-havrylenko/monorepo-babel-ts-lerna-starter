@@ -1,28 +1,35 @@
 import { Input } from '@taxi/input';
 import * as React from 'react';
-import styled from 'styled-components';
+import { makeStyles } from '@material-ui/styles';
 
-const Wrapper = styled.div`
-  display: flex;
-  flex-direction: column;
-  margin: 10px;
-`;
-
-const ButtonsWrapper = styled.div`
-  text-align: right;
-`;
+const useStyles = makeStyles({
+  root: {
+    display: 'flex',
+    flexDirection: 'column',
+    margin: '10px',
+  },
+  wrapper: {
+    textAlign: 'right',
+  },
+});
 
 export interface LoginFormProps {
   onClick?: () => void;
 }
 
-export const LoginForm: React.SFC<LoginFormProps> = ({ onClick }) => (
-  <Wrapper>
-    <Input id="name" label="Name" />
-    <Input id="password" label="Password" />
+export const LoginForm: React.FunctionComponent<LoginFormProps> = ({
+  onClick,
+}) => {
+  const classes = useStyles();
 
-    <ButtonsWrapper>
-      <button onClick={onClick}>Log in</button>
-    </ButtonsWrapper>
-  </Wrapper>
-);
+  return (
+    <div className={classes.root}>
+      <Input id="name" label="Name" />
+      <Input id="password" label="Password" />
+
+      <div className={classes.wrapper}>
+        <button onClick={onClick}>Log in</button>
+      </div>
+    </div>
+  );
+};

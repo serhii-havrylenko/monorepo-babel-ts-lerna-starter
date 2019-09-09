@@ -1,14 +1,15 @@
-import { mount } from 'enzyme';
 import * as React from 'react';
+import { render } from '@testing-library/react';
 
 import { Input } from './Input';
 
 describe('Input', () => {
   test('should match snapshot and styles for default props', () => {
-    expect(mount(<Input />)).toMatchSnapshot();
+    expect(render(<Input />).asFragment()).toMatchSnapshot();
   });
 
   test('should match snapshot with label', () => {
-    expect(mount(<Input id="test" label="Name" />)).toMatchSnapshot();
+    const wrapper = render(<Input id="test" label="Name" />);
+    expect(wrapper.asFragment()).toMatchSnapshot();
   });
 });
