@@ -14,7 +14,8 @@
       - [Checking types](#checking-types)
     - [Peer dependencies](#peer-dependencies)
     - [Static code analyser](#static-code-analyser)
-      - [Tslint](#tslint)
+      - [@typescript-eslint](#@typescript-eslint)
+      - ~~[Tslint](#tslint)~~
       - [Stylelint](#stylelint)
       - [All together](#all-together)
     - [Code formatting](#code-formatting)
@@ -22,7 +23,8 @@
     - [Storybook](#storybook)
       - [Installation](#installation-1)
       - [Typescript](#typescript)
-      - [Tslint](#tslint-1)
+      - [@typescript-eslint](#@typescript-eslint-1)
+      - ~~[Tslint](#tslint-1)~~
       - [Addons](#addons)
     - [Final build](#final-build)
     - [Committing your work](#committing-your-work)
@@ -36,7 +38,8 @@
   - [Multiple packages](#multiple-packages)
     - [Development](#development-1)
       - [Declarations generation](#declarations-generation)
-      - [Tslint](#tslint-2)
+      - [@typescript-eslint](#@typescript-eslint-2)
+      - ~~[Tslint](#tslint-2)~~
       - [Drawbacks](#drawbacks)
     - [Typescript](#typescript-1)
     - [Storybook](#storybook-2)
@@ -354,7 +357,73 @@ yarn add -DW react @types/react styled-components
 
 Having typescript for types checking could protect us from creating plenty of mistakes and save a lot of time for writing basic unit tests related to incorrect input data. However, it won't protect us from writing over-complicated, unreadable, or even hacky code. Even more, it won't protect us from using incorrect or unsupported CSS rules, would it be CSS, SCSS or CSS-in-JS.
 
-#### Tslint
+#### @typescript-eslint
+
+<p align="center">
+  <a href="https://github.com/typescript-eslint/typescript-eslint">
+    <img alt="tslint" src="https://eslint.org/assets/img/logo.svg" width="150">
+  </a>
+</p>
+
+Due to tslint deprecation plan in 2019, `@typescript-eslint` is going to be used as standard stacic code analyzer.
+
+Let's add all required packages as devDependency in the root of our monorepo:
+
+```bash
+yarn add -DW eslint eslint-plugin-react @typescript-eslint/parser @typescript-eslint/eslint-plugin eslint-plugin-import
+```
+
+and create simple config file for it `.eslintrc.js`:
+
+```javascript
+module.exports = {
+  env: {
+    node: true,
+    browser: true,
+    jest: true,
+  },
+  parser: '@typescript-eslint/parser',
+  extends: [
+    'eslint:recommended',
+    'plugin:react/recommended',
+    'plugin:@typescript-eslint/recommended',
+    'prettier/@typescript-eslint',
+    'plugin:import/errors',
+    'plugin:import/warnings',
+    'plugin:import/typescript',
+  ],
+  parserOptions: {
+    ecmaVersion: 2018,
+    sourceType: 'module',
+    ecmaFeatures: {
+      jsx: true,
+    },
+  },
+  settings: {
+    react: {
+      version: 'detect',
+    },
+  },
+  rules: {
+    'react/prop-types': 'off',
+    'import/no-extraneous-dependencies': ['error'],
+  },
+};
+```
+
+and new script in package.json for linting `*.ts` files:
+
+```json
+{
+  "scripts": {
+    "lint:ts": "eslint 'packages/**/*.ts{,x}'"
+  }
+}
+```
+
+Now static code analyzer could be run with simple yarn lint:ts command.
+
+#### ~~Tslint~~
 
 <p align="center">
   <a href="https://palantir.github.io/tslint/">
@@ -362,15 +431,15 @@ Having typescript for types checking could protect us from creating plenty of mi
   </a>
 </p>
 
-The easiest solution for automating such checks is using `tslint` for static code analyzing.
+~~The easiest solution for automating such checks is using `tslint` for static code analyzing.~~
 
-Let's install it as devDependency in the root of our monorepo:
+~~Let's install it as devDependency in the root of our monorepo:~~
 
 ```bash
 yarn add -DW tslint tslint-react
 ```
 
-and create simple config file for it `tslint.json`:
+~~and create simple config file for it `tslint.json`:~~
 
 ```json
 {
@@ -381,7 +450,7 @@ and create simple config file for it `tslint.json`:
 }
 ```
 
-and new script in package.json for linting `*.ts` files:
+~~and new script in package.json for linting `*.ts` files:~~
 
 ```json
 {
@@ -391,7 +460,7 @@ and new script in package.json for linting `*.ts` files:
 }
 ```
 
-Now static code analyzer could be run with simple `yarn lint:ts` command.
+~~Now static code analyzer could be run with simple `yarn lint:ts` command.~~
 
 #### Stylelint
 
@@ -460,12 +529,12 @@ and new script in the root `package.json`:
   </a>
 </p>
 
-For now we have `typescript` for static types checking, `tslint` and `stylelint` for static code analyzing. Still, we could write unreadable or not well formatted code. We could avoid all issues relate to code formatting with `prettier`. It will automatically format our code according to predefined standards. Moreover, it will fix some issues reported by `tslint`.
+For now we have `typescript` for static types checking, `eslint` and `stylelint` for static code analyzing. Still, we could write unreadable or not well formatted code. We could avoid all issues relate to code formatting with `prettier`. It will automatically format our code according to predefined standards. Moreover, it will fix some issues reported by `eslint`.
 
 As usual, installation and configuration is very simple:
 
 ```bash
-yarn add -DW prettier tslint-config-prettier tslint-plugin-prettier
+yarn add -DW prettier eslint-plugin-prettier eslint-config-prettier
 ```
 
 Next is needed is `.prettierrc`:
@@ -480,27 +549,23 @@ Next is needed is `.prettierrc`:
 }
 ```
 
-and integration with `tslint`, as both of the tools have common rules (like tabWidth, trailingComma, etc). Next lines should be added to the `tslint.json` to make it work with prettier:
+and integration with `eslint`, as both of the tools have common rules (like tabWidth, trailingComma, etc). Next lines should be changed in the `.eslintrc.js` to make it work with prettier:
 
-```json
-{
-  "extends": [
-    "tslint:latest",
-    "tslint-react",
-    "tslint-plugin-prettier",
-    "tslint-config-prettier"
+```javascript
+module.exports = {
+  // existing eslint configuration
+  extends: [
+    'eslint:recommended',
+    'plugin:react/recommended',
+    'plugin:@typescript-eslint/recommended',
+    'prettier/@typescript-eslint',
+    'plugin:prettier/recommended',
+    'plugin:import/errors',
+    'plugin:import/warnings',
+    'plugin:import/typescript',
   ],
-  "rules": {
-    "prettier": true,
-    "quotemark": [
-      true,
-      "single",
-      "avoid-escape",
-      "avoid-template",
-      "jsx-double"
-    ]
-  }
-}
+  // existing eslint configuration
+};
 ```
 
 Important note is `quotemark` rule. Because of `jsx` usage we have to override default recommended rules which requires to have single quotemark everywhere.
@@ -718,17 +783,48 @@ and associated configuration part in `tsconfig.json` for `awesome-typescript-loa
 
 Configuration part is ready, we could start storybook with `yarn storybook` command.
 
-#### Tslint
+#### @typescript-eslint
 
-As soon as we add `storybook` to our devDependencies and run `yarn lint:ts` we will get an error from `tslint`:
+As soon as we add `storybook` to our devDependencies and run `yarn lint:ts` we will get an error from `eslint`:
+
+```bash
+{path_to_repository}/monorepo/packages/input/src/Input.story.tsx
+  1:1  error  '@storybook/addon-knobs' should be listed in the project's dependencies. Run 'npm i -S @storybook/addon-knobs' to add it  import/no-extraneous-dependencies
+  2:1  error  '@storybook/react' should be listed in the project's dependencies. Run 'npm i -S @storybook/react' to add it              import/no-extraneous-dependencies
+```
+
+This means that we need to configure `import/no-extraneous-dependencies` to be able to work with development dependecies which are provided in `package.json` in root of monorepository.
+
+Let's add override to `.eslintrc.js`:
+
+```javascript
+// .eslintrc.js
+modeule.exports = {
+  // existing eslint configuration
+  overrides: [
+    {
+      files: ['*.{test,spec,story}.ts{,x}'],
+      rules: {
+        'import/no-extraneous-dependencies': ['error', { packageDir: './' }],
+      },
+    },
+  ],
+};
+```
+
+This allow linter to check `story`, `test` and `spec` files with extended list of development dependencies, which is provided by package.json in root of monorepository.
+
+#### ~~Tslint~~
+
+~~As soon as we add `storybook` to our devDependencies and run `yarn lint:ts` we will get an error from `tslint`:~~
 
 ```
 ERROR: Module '@storybook/react' is not listed as dependency in package.json
 ```
 
-The reason is obvious, we use package which is installed as devDependency in our source code (in the story file). Unfortunately there is no options like override for specific path or files. It could be done by splitting `lint-ts` command into two separated for production code (which will be shipped as packages) and for test code (storybook, tests, etc).
+~~The reason is obvious, we use package which is installed as devDependency in our source code (in the story file). Unfortunately there is no options like override for specific path or files. It could be done by splitting `lint-ts` command into two separated for production code (which will be shipped as packages) and for test code (storybook, tests, etc).~~
 
-Let's create config for `tslint` for production phase, called `tslint.prod.json`:
+~~Let's create config for `tslint` for production phase, called `tslint.prod.json`:~~
 
 ```json
 {
@@ -739,7 +835,7 @@ Let's create config for `tslint` for production phase, called `tslint.prod.json`
 }
 ```
 
-Another config for the test phase called `tslint.test.json`:
+~~Another config for the test phase called `tslint.test.json`:~~
 
 ```json
 {
@@ -750,9 +846,9 @@ Another config for the test phase called `tslint.test.json`:
 }
 ```
 
-`"no-implicit-dependencies": false` into `tslint.json` to disable this rule by default. This one is need to fix issues with IDEs as by default they use `tslint.json` for all files, whether it test or production code.
+~~`"no-implicit-dependencies": false` into `tslint.json` to disable this rule by default. This one is need to fix issues with IDEs as by default they use `tslint.json` for all files, whether it test or production code.~~
 
-Last, but not least, scripts in the root `package.json` have to be adjusted:
+~~Last, but not least, scripts in the root `package.json` have to be adjusted:~~
 
 ```json
 {
@@ -1344,9 +1440,37 @@ $ tsc
 Done in 4.22s.
 ```
 
-#### Tslint
+#### @typescript-eslint
 
-As soon as we generate declarations and run `tslint` we would have errors like:
+As soon as we generate declarations and run `eslitn` we would have errors like:
+
+```bash
+{path_to_repository}/monorepo/packages/input/dist/Input.d.ts
+   3:3   error  Delete `··`                                                                     prettier/prettier
+   6:3   error  Delete `··`                                                                     prettier/prettier
+   7:1   error  Delete `··`                                                                     prettier/prettier
+  10:3   error  Delete `··`                                                                     prettier/prettier
+  11:1   error  Delete `··`                                                                     prettier/prettier
+  13:38  error  Replace `·InputWithLabelProps` with `⏎··|·InputWithLabelProps⏎·`                prettier/prettier
+  15:1   error  Delete `··`                                                                     prettier/prettier
+  16:3   error  Delete `··`                                                                     prettier/prettier
+  18:53  error  Replace `InputProps·&·InputLabelProps` with `⏎··InputProps·&·InputLabelProps⏎`  prettier/prettier
+```
+
+It happens because `eslitn` tries to validate `*d.ts` files as well.
+
+Let's add `.eslintignore` configuration with list of files and directories which should be never linted:
+
+```
+dist/
+*.d.ts
+```
+
+Now if we run `yarn lint:ts` we won't have any errors related to `.d.ts` files.
+
+#### ~~Tslint~~
+
+~~As soon as we generate declarations and run `tslint` we would have errors like:~~
 
 ```
 ERROR: packages/input/dist/Input.d.ts[13, 38]: Replace `·InputWithLabelProps` with `⏎··|·InputWithLabelProps⏎·`
@@ -1354,9 +1478,9 @@ ERROR: packages/input/dist/Input.d.ts[15, 3]: Delete `··`
 ERROR: packages/input/dist/Input.d.ts[16, 1]: Delete `··`
 ```
 
-It happens because `tslint` tries to validate `*d.ts` files as well. Let's add the to the ignore. With latest version of `tslint` we could do it in configuration file, so:
+~~It happens because `tslint` tries to validate `*d.ts` files as well. Let's add the to the ignore. With latest version of `tslint` we could do it in configuration file, so:~~
 
-1. `tslint.prod.json`
+~~1. `tslint.prod.json`~~
 
 ```json
 {
@@ -1366,7 +1490,7 @@ It happens because `tslint` tries to validate `*d.ts` files as well. Let's add t
 }
 ```
 
-2. `tslint.test.json`
+~~2. `tslint.test.json`~~
 
 ```json
 {
@@ -1376,7 +1500,7 @@ It happens because `tslint` tries to validate `*d.ts` files as well. Let's add t
 }
 ```
 
-Now if we run `yarn lint:ts` we won't have any errors related to `.d.ts` files.
+~~Now if we run `yarn lint:ts` we won't have any errors related to `.d.ts` files.~~
 
 #### Drawbacks
 
