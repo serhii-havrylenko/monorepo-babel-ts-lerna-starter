@@ -14,7 +14,7 @@
     "build:old": "lerna exec --parallel 'BABEL_ENV=build babel src --root-mode upward --out-dir dist --source-maps --extensions .ts,.tsx --delete-dir-on-start --no-comments'",
     "postbuild": "yarn build:declarations",
     "commit": "git-cz",
-    "fix": "run-p -c 'lint:ts-* --fix'",
+    "fix": "run-p -c 'lint:* --fix'",
     "lint:css": "stylelint 'packages/**/*.ts{,x}'",
     "lint:ts": "eslint 'packages/**/*.ts{,x}'",
     "lint": "run-p -c lint:*",
